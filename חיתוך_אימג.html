@@ -1,0 +1,1367 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מקטע תמונה MediaPipe - UNDER CUT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+            direction: rtl; 
+            overscroll-behavior: none; 
+            /* Prevent pull-to-refresh and other touch-related browser actions that might interfere */
+            touch-action: manipulation;
+        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #2d3748; } 
+        ::-webkit-scrollbar-thumb { background: #4a5568; border-radius: 4px; } 
+        ::-webkit-scrollbar-thumb:hover { background: #718096; }
+        
+        .video-container {
+            position: relative; width: 100%; height:100%;
+            background-color: #1a202c; 
+        }
+        #webcam, #outputCanvas, #staticImageDisplay { 
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%;
+            border-radius: 0.5rem; 
+        }
+        #webcam, #staticImageDisplay { 
+            object-fit: contain; 
+        }
+        #outputCanvas {
+            object-fit: contain; 
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none;
+            width: 24px; height: 24px; /* Slightly larger for touch */
+            background: #ec4899; 
+            cursor: pointer; border-radius: 50%;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 24px; height: 24px; /* Slightly larger for touch */
+            background: #ec4899; 
+            cursor: pointer; border-radius: 50%; border: none;
+        }
+        .nav-button {
+            /* Adjusted padding for better touch targets on all screen sizes */
+            @apply p-2.5 bg-pink-500 hover:bg-pink-600 text-white rounded-md transition-colors duration-150 shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center;
+        }
+        .control-panel {
+            @apply bg-white bg-opacity-70 backdrop-blur-sm p-4 sm:p-6 rounded-lg shadow-2xl text-gray-800;
+            position: relative; 
+        }
+        #infoPanel .control-panel {
+             @apply bg-white bg-opacity-100 text-gray-800; 
+        }
+        .nav-button.active {
+            @apply bg-purple-600 ring-2 ring-pink-400;
+        }
+        .form-checkbox { 
+            /* Ensure checkbox itself is reasonably sized, label enhances tappable area */
+            @apply h-5 w-5 text-pink-500 bg-gray-200 border-gray-400 rounded focus:ring-pink-600 cursor-pointer; 
+        }
+        .file-input-button {
+            @apply mt-2 w-full text-sm bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-4 rounded transition-colors duration-150 cursor-pointer; /* Increased py for touch */
+        }
+        #backgroundPreview {
+            width: 100%; max-height: 150px; object-fit: contain; 
+            border-radius: 0.25rem; margin-top: 0.5rem; background-color: #e2e8f0; 
+        }
+        #controlPanelsContainer {
+            position: absolute; top: 1rem; right: 1rem; 
+            width: clamp(280px, 80vw, 400px); /* Allow more width on smaller viewports */
+            max-height: calc(100% - 2rem); 
+            z-index: 50; 
+        }
+        input[type="color"] {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            width: 32px; /* Slightly larger for touch */
+            height: 32px;
+            background-color: transparent;
+            border: 1px solid #9ca3af; 
+            border-radius: 0.25rem; 
+            cursor: pointer;
+            padding: 2px; 
+        }
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+        input[type="color"]::-webkit-color-swatch {
+            border: none;
+            border-radius: 0.125rem; 
+        }
+        input[type="color"]::-moz-color-swatch {
+            border: none;
+            border-radius: 0.125rem; 
+        }
+        .drag-handle-icon {
+            @apply absolute top-2 left-2 cursor-grab text-2xl p-1 text-gray-500 hover:text-gray-700; /* Increased size */
+            user-select: none;
+        }
+        select.form-select {
+            @apply block w-full pl-3 pr-10 py-2.5 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md text-gray-900 bg-white; /* Increased py */
+        }
+        #appTitle {
+            font-family: 'Orbitron', sans-serif;
+            transition: color 0.5s ease-in-out; 
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        .blinking-indicator {
+            animation: blink 1s infinite;
+        }
+        .status-recording {
+            @apply bg-red-600 text-white; 
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 flex flex-col h-screen overflow-hidden">
+
+    <nav id="topNav" class="bg-gray-800 p-2 sm:p-3 shadow-lg sticky top-0 z-[60] w-full">
+        <div class="container mx-auto flex flex-wrap justify-between items-center gap-x-2 gap-y-2 sm:gap-x-4">
+            <h1 id="appTitle" class="text-xl sm:text-2xl font-bold text-white whitespace-nowrap">UNDER CUT</h1>
+
+            <div class="flex items-center gap-1 sm:gap-2 order-3 w-full sm:w-auto justify-center sm:justify-start mt-2 sm:mt-0 sm:order-2 flex-wrap">
+                <button id="btnToggleLayers" class="nav-button" title="שכבות ורקע"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 sm:w-6 sm:h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M6.429 9.75L2.25 12l4.179 2.25m0-4.5l5.571 3 5.571-3m-11.142 0L2.25 12l4.179 2.25m0 0l5.571 3L21.75 12M6.429 9.75L2.25 12l4.179 2.25m11.142-4.5l-5.571 3-5.571-3" /></svg></button>
+                <button id="btnToggleProcessingOptions" class="nav-button" title="אפשרויות עיבוד"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 sm:w-6 sm:h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-1.007 1.057-1.246a11.952 11.952 0 00-1.057 1.246c-.497.239-.966.699-1.057 1.246m4.116 0c.09-.542.56-1.007 1.057-1.246a11.952 11.952 0 00-1.057 1.246c-.497.239-.966.699-1.057 1.246m0 11.48c.09.542.56 1.007 1.057 1.246a11.952 11.952 0 00-1.057-1.246c-.497-.239-.966-.699-1.057-1.246m4.116 0c.09.542.56 1.007 1.057 1.246a11.952 11.952 0 00-1.057-1.246c-.497-.239-.966-.699-1.057-1.246m0-3.89m4.116 0c.09-.542.56-1.007 1.057-1.246a11.952 11.952 0 00-1.057 1.246c-.497.239-.966.699-1.057 1.246M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg></button>
+                <button id="btnToggleCoverage" class="nav-button" title="אחוזי כיסוי"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 sm:w-6 sm:h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6a7.5 7.5 0 107.5 7.5h-7.5V6z" /><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0013.5 3v7.5z" /></svg></button>
+                <input type="file" id="staticImageInput" accept="image/*" class="hidden">
+                <button id="btnUploadStaticImage" class="nav-button bg-teal-500 hover:bg-teal-600" title="העלאת תמונה סטטית"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 sm:w-6 sm:h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg></button>
+                <button id="btnReturnToCamera" class="nav-button bg-orange-500 hover:bg-orange-600 hidden" title="חזור למצלמה"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 sm:w-6 sm:h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9A2.25 2.25 0 0013.5 5.25h-9A2.25 2.25 0 002.25 7.5v9A2.25 2.25 0 004.5 18.75z" /></svg></button>
+                <button id="exportImageButton" class="nav-button bg-green-500 hover:bg-green-600" title="ייצוא תמונה"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 sm:w-6 sm:h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg></button>
+                <button id="exportVideoButton" class="nav-button bg-blue-500 hover:bg-blue-600" title="ייצוא וידאו (15 שנ')"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 sm:w-6 sm:h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9A2.25 2.25 0 0013.5 5.25h-9A2.25 2.25 0 002.25 7.5v9A2.25 2.25 0 004.5 18.75z" /></svg></button>
+            </div>
+
+            <div class="flex items-center gap-1 sm:gap-2 order-2 sm:order-3">
+                <div id="dateTimeDisplay" class="text-xs sm:text-sm text-gray-300 whitespace-nowrap hidden sm:block"></div>
+                <button id="btnInfo" class="nav-button bg-purple-500 hover:bg-purple-600" title="מידע">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 sm:w-6 sm:h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                    </svg>
+                </button>
+                <div id="statusContainer" class="flex items-center text-xs text-yellow-400 bg-gray-700 px-1.5 py-1 sm:px-2 sm:py-1.5 rounded-md min-h-[34px] sm:min-h-[36px]">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 sm:w-5 sm:h-5 mr-1 flex-shrink-0 icon-status"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" /></svg>
+                    <div id="status" class="whitespace-nowrap overflow-hidden text-ellipsis text-[11px] sm:text-xs">טוען מודל...</div>
+                </div>
+                <div id="recordingIndicator" class="hidden w-3 h-3 bg-red-500 rounded-full ml-1 sm:ml-2"></div> 
+            </div>
+             <div id="dateTimeDisplaySmall" class="text-xs text-gray-300 whitespace-nowrap sm:hidden w-full text-center order-4 py-1 mt-1"></div>
+        </div>
+    </nav>
+
+    <div id="mainContentArea" class="relative w-full flex-grow p-1 sm:p-2 md:p-4 overflow-hidden">
+        <div class="video-container shadow-2xl rounded-lg">
+            <video id="webcam" autoplay playsinline muted class="hidden"></video>
+            <img id="staticImageDisplay" class="hidden" alt="Static image display"/>
+            <canvas id="outputCanvas"></canvas>
+            <div id="webcam-placeholder" class="w-full h-full flex items-center justify-center bg-gray-800 rounded-lg">
+                <svg class="w-12 h-12 sm:w-16 sm:h-16 text-gray-600 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+            </div>
+        </div>
+
+        <div id="controlPanelsContainer" class="space-y-2 sm:space-y-4 overflow-y-auto pr-0.5 sm:pr-1">
+            <div id="panelLayers" class="control-panel hidden">
+                <div class="drag-handle-icon" title="גרור">⠿</div>
+                <h2 class="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-pink-500">שכבות ורקע:</h2>
+                <div id="segmentControlsContainer" class="space-y-2 sm:space-y-3"></div>
+                <div class="mt-4 sm:mt-6 border-t border-gray-400 pt-3 sm:pt-4"> 
+                    <h3 class="text-md sm:text-lg font-semibold mb-2 text-indigo-500">החלפת רקע:</h3>
+                    <div>
+                        <label for="backgroundImageInput" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">בחר תמונת רקע:</label>
+                        <input type="file" id="backgroundImageInput" accept="image/*" class="hidden">
+                        <button onclick="document.getElementById('backgroundImageInput').click()" class="file-input-button">טען תמונה...</button>
+                        <img id="backgroundPreview" src="#" alt="תצוגה מקדימה של רקע" class="hidden"/>
+                    </div>
+                    <label for="replaceBackgroundCheckbox" class="flex items-center text-xs sm:text-sm font-medium text-gray-700 mt-3">
+                        <input type="checkbox" id="replaceBackgroundCheckbox" class="form-checkbox mr-2">
+                        החלף רקע בתמונה מיובאת
+                    </label>
+                </div>
+            </div>
+            <div id="panelProcessingOptions" class="control-panel hidden">
+                <div class="drag-handle-icon" title="גרור">⠿</div>
+                <h2 class="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-pink-500">אפשרויות עיבוד:</h2>
+                <div class="mb-3 sm:mb-4">
+                    <label for="resolutionSelect" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">רזולוציית מצלמה:</label>
+                    <select id="resolutionSelect" class="form-select">
+                        <option value="640x360">640x360</option>
+                        <option value="1280x720" selected>1280x720 (HD)</option>
+                        <option value="1920x1080">1920x1080 (FHD)</option>
+                    </select>
+                </div>
+                <div class="mb-3 sm:mb-4">
+                    <label for="confidenceThreshold" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">סף רגישות</label>
+                    <input type="range" id="confidenceThreshold" min="0.1" max="0.9" step="0.05" value="0.65" class="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer"> 
+                    <div class="text-right text-xs sm:text-sm text-gray-600 mt-1">ערך: <span id="confidenceValue" class="font-medium text-pink-500">0.65</span></div>
+                </div>
+                <div class="mb-3 sm:mb-4">
+                    <label for="enableSmoothing" class="flex items-center text-xs sm:text-sm font-medium text-gray-700">
+                        <input type="checkbox" id="enableSmoothing" class="form-checkbox mr-2">
+                        הפעל החלקת מסכה
+                    </label>
+                </div>
+                <div>
+                    <label for="enableEdgeSoftness" class="flex items-center text-xs sm:text-sm font-medium text-gray-700">
+                        <input type="checkbox" id="enableEdgeSoftness" class="form-checkbox mr-2">
+                        הפעל רכות קצוות
+                    </label>
+                </div>
+                <div class="mt-2">
+                    <label for="edgeSoftnessSlider" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">עוצמת רכות קצוות</label>
+                    <input type="range" id="edgeSoftnessSlider" min="0" max="5" step="1" value="1" class="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer"> 
+                    <div class="text-right text-xs sm:text-sm text-gray-600 mt-1">ערך: <span id="edgeSoftnessValue" class="font-medium text-pink-500">1</span></div>
+                </div>
+            </div>
+            <div id="panelCoverage" class="control-panel hidden">
+                <div class="drag-handle-icon" title="גרור">⠿</div>
+                <h2 class="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-pink-500">אחוזי כיסוי:</h2>
+                <div id="coverageResultsDiv" class="mt-2 text-gray-700 text-xs sm:text-sm"></div> 
+            </div>
+        </div>
+    </div>
+
+    <div id="infoPanel" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-[70] hidden">
+        <div class="control-panel w-full max-w-md sm:max-w-lg"> 
+            <div class="drag-handle-icon" title="גרור">⠿</div>
+            <button id="closeInfoPanel" class="absolute top-1 right-1 sm:top-2 sm:right-2 text-gray-500 hover:text-gray-800 text-2xl sm:text-3xl p-1 z-10">&times;</button>
+            <h2 class="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 text-center text-purple-600">מידע ושימוש ב-UNDER CUT</h2>
+            <div class="text-xs sm:text-sm space-y-2 sm:space-y-3 text-gray-700 max-h-[70vh] sm:max-h-[60vh] overflow-y-auto pr-1 sm:pr-2">
+                <p class="font-semibold">ברוכים הבאים לאפליקציית UNDER CUT!</p>
+                <p>אפליקציה זו מאפשרת לכם לבצע פילוח (סגמנטציה) של דמויות מתוך תמונת מצלמה חיה או תמונה סטטית, ולהתאים את התצוגה באופן דינמי.</p>
+                
+                <h3 class="text-md sm:text-lg font-semibold mt-3 sm:mt-4 mb-1 text-purple-500">תכונות עיקריות:</h3>
+                <ul class="list-disc list-inside space-y-1">
+                    <li><strong>פילוח בזמן אמת:</strong> צפייה בפילוח המתרחש ישירות מול מצלמת האינטרנט שלכם.</li>
+                    <li><strong>העלאת תמונה:</strong> אפשרות להעלות תמונה קיימת ולבצע עליה פילוח.</li>
+                    <li><strong>שליטה בשכבות:</strong> הסתרה או הצגה של שכבות פילוח שונות.</li>
+                    <li><strong>החלפת רקע:</strong> טעינת תמונה אישית שתשמש כרקע.</li>
+                    <li><strong>צביעת בגדים:</strong> בחירת צבע מותאם אישית לשכבת הבגדים.</li>
+                    <li><strong>אפשרויות עיבוד:</strong> רזולוציה, סף רגישות, החלקת מסכה ורכות קצוות.</li>
+                    <li><strong>אחוזי כיסוי:</strong> נתונים על אחוז הכיסוי של כל שכבה.</li>
+                    <li><strong>ייצוא:</strong> שמירת תמונה כ-PNG או הקלטת וידאו (15 שנ') כ-WEBM.</li>
+                </ul>
+
+                <h3 class="text-md sm:text-lg font-semibold mt-3 sm:mt-4 mb-1 text-purple-500">הוראות שימוש:</h3>
+                <ol class="list-decimal list-inside space-y-1">
+                    <li><strong>הפעלת מצלמה:</strong> אשרו הרשאת גישה למצלמה בדפדפן.</li>
+                    <li><strong>סרגל כלים עליון:</strong> גישה מהירה לכל הפונקציות.</li>
+                    <li><strong>חלוניות צד:</strong> שליטה מפורטת על שכבות, עיבוד ואחוזי כיסוי.</li>
+                </ol>
+            </div>
+            <p class="text-xs text-center mt-4 sm:mt-8 pt-3 sm:pt-4 border-t border-gray-400 text-gray-600">כל הזכויות שמורות לאורן ג'מצ'י נעשה בעזרת GEMINI</p>
+        </div>
+    </div>
+    
+    <script type="module">
+        import { 
+            ImageSegmenter, 
+            FilesetResolver 
+        } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/vision_bundle.js';
+
+        // Declare variables for DOM elements
+        let video, canvasElement, canvasCtx, statusElement, statusContainer, statusIcon,
+            segmentControlsContainer, 
+            confidenceSlider, confidenceValueSpan, webcamPlaceholder, 
+            coverageResultsDiv, exportImageButton, exportVideoButton,
+            enableSmoothingCheckbox, resolutionSelect,
+            backgroundImageInput, backgroundPreview, replaceBackgroundCheckbox,
+            staticImageInput, btnUploadStaticImage, btnReturnToCamera, staticImageDisplay,
+            enableEdgeSoftnessCheckbox, edgeSoftnessSlider, edgeSoftnessValueSpan;
+            
+        let btnToggleLayers, btnToggleProcessingOptions, btnToggleCoverage;
+        let panelLayers, panelProcessingOptions, panelCoverage;
+        let activePanelId = null; 
+        let isStaticImageMode = false; 
+        let currentStaticImage = null; 
+
+        let imageSegmenterInstance; 
+        let lastVideoTime = -1;
+        let globalThreshold;
+        let useSmoothing = false;
+        let useEdgeSoftness = false; 
+        let edgeSoftnessRadius = 1; 
+        let selectedClothesColor = null; 
+
+        let currentResolution = "1280x720"; 
+        let importedBackgroundImage = null; 
+        let replaceBackgroundEnabled = false; 
+
+        let mediaRecorder;
+        let recordedChunks = [];
+        let isRecordingVideo = false;
+        let recordingStartTime;
+        const RECORDING_DURATION = 15000; // 15 seconds
+
+        // Info Panel elements
+        let btnInfo, infoPanel, closeInfoPanel, dateTimeDisplay, dateTimeDisplaySmall;
+        // Logo and recording indicator
+        let appTitleElement, recordingIndicator;
+        
+        // Legend for segmentation categories
+        const legend = [
+            { name: "רקע", id: "background", maskIndex: 0, color: [70, 130, 180], checked: false }, 
+            { name: "שיער", id: "hair", maskIndex: 1, color: [205, 133, 63], checked: true },  
+            { name: "עור גוף", id: "bodySkin", maskIndex: 2, color: [34, 139, 34], checked: true }, 
+            { name: "עור פנים", id: "faceSkin", maskIndex: 3, color: [255, 127, 80], checked: true },
+            { name: "בגדים", id: "clothes", maskIndex: 4, color: [138, 43, 226], checked: true }, 
+            { name: "אביזרים", id: "accessories", maskIndex: 5, color: [128, 128, 128], checked: true } 
+        ];
+
+        // Colors for logo cycling animation
+        const logoColors = ['#FF00FF', '#00FFFF', '#FFFF00', '#00FF00', '#FF0000', '#FFFFFF'];
+        let currentColorIndex = 0;
+
+        // Function to cycle through logo colors
+        function cycleLogoColor() {
+            if (appTitleElement) {
+                currentColorIndex = (currentColorIndex + 1) % logoColors.length;
+                appTitleElement.style.color = logoColors[currentColorIndex];
+            }
+        }
+
+        // Function to update and display the current date and time
+        function updateDateTime() {
+            if (dateTimeDisplay && dateTimeDisplaySmall) {
+                const now = new Date();
+                const dateOptions = { day: '2-digit', month: '2-digit', year: 'numeric' };
+                const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
+                const dateString = now.toLocaleDateString('he-IL', dateOptions);
+                const timeString = now.toLocaleTimeString('he-IL', timeOptions);
+                const fullDateTimeString = `${dateString} | ${timeString}`;
+                dateTimeDisplay.textContent = fullDateTimeString;
+                dateTimeDisplaySmall.textContent = fullDateTimeString;
+            }
+        }
+        
+        // Setup DOM element references and attach event listeners
+        function setupDOMReferencesAndListeners() {
+            video = document.getElementById('webcam');
+            canvasElement = document.getElementById('outputCanvas');
+            staticImageDisplay = document.getElementById('staticImageDisplay');
+            if (canvasElement) { 
+                canvasCtx = canvasElement.getContext('2d', { willReadFrequently: true }); 
+            }
+            statusElement = document.getElementById('status'); 
+            statusContainer = document.getElementById('statusContainer');
+            statusIcon = statusContainer ? statusContainer.querySelector('.icon-status') : null;
+
+            segmentControlsContainer = document.getElementById('segmentControlsContainer');
+            confidenceSlider = document.getElementById('confidenceThreshold');
+            confidenceValueSpan = document.getElementById('confidenceValue');
+            webcamPlaceholder = document.getElementById('webcam-placeholder');
+            coverageResultsDiv = document.getElementById('coverageResultsDiv');
+            exportImageButton = document.getElementById('exportImageButton'); 
+            exportVideoButton = document.getElementById('exportVideoButton');
+            enableSmoothingCheckbox = document.getElementById('enableSmoothing');
+            resolutionSelect = document.getElementById('resolutionSelect');
+            backgroundImageInput = document.getElementById('backgroundImageInput');
+            backgroundPreview = document.getElementById('backgroundPreview');
+            replaceBackgroundCheckbox = document.getElementById('replaceBackgroundCheckbox');
+            
+            staticImageInput = document.getElementById('staticImageInput');
+            btnUploadStaticImage = document.getElementById('btnUploadStaticImage');
+            btnReturnToCamera = document.getElementById('btnReturnToCamera');
+
+            btnToggleLayers = document.getElementById('btnToggleLayers');
+            btnToggleProcessingOptions = document.getElementById('btnToggleProcessingOptions');
+            btnToggleCoverage = document.getElementById('btnToggleCoverage');
+            
+            panelLayers = document.getElementById('panelLayers');
+            panelProcessingOptions = document.getElementById('panelProcessingOptions');
+            panelCoverage = document.getElementById('panelCoverage');
+
+            enableEdgeSoftnessCheckbox = document.getElementById('enableEdgeSoftness');
+            edgeSoftnessSlider = document.getElementById('edgeSoftnessSlider');
+            edgeSoftnessValueSpan = document.getElementById('edgeSoftnessValue');
+
+            btnInfo = document.getElementById('btnInfo');
+            infoPanel = document.getElementById('infoPanel');
+            closeInfoPanel = document.getElementById('closeInfoPanel');
+            dateTimeDisplay = document.getElementById('dateTimeDisplay');
+            dateTimeDisplaySmall = document.getElementById('dateTimeDisplaySmall');
+
+            appTitleElement = document.getElementById('appTitle');
+            recordingIndicator = document.getElementById('recordingIndicator');
+
+            // Initialize confidence threshold slider
+            if (confidenceSlider && confidenceValueSpan) { 
+                globalThreshold = parseFloat(confidenceSlider.value); 
+                confidenceValueSpan.textContent = globalThreshold.toFixed(2);
+                confidenceSlider.oninput = () => {
+                    globalThreshold = parseFloat(confidenceSlider.value);
+                    confidenceValueSpan.textContent = globalThreshold.toFixed(2);
+                    if (isStaticImageMode && currentStaticImage) processStaticImage(currentStaticImage);
+                };
+            } else { globalThreshold = 0.65; } 
+
+            // Initialize smoothing checkbox
+            if(enableSmoothingCheckbox) {
+                useSmoothing = enableSmoothingCheckbox.checked;
+                enableSmoothingCheckbox.onchange = () => { 
+                    useSmoothing = enableSmoothingCheckbox.checked; 
+                    if (isStaticImageMode && currentStaticImage) processStaticImage(currentStaticImage);
+                };
+            }
+
+            // Initialize edge softness controls
+            if(enableEdgeSoftnessCheckbox && edgeSoftnessSlider && edgeSoftnessValueSpan) {
+                useEdgeSoftness = enableEdgeSoftnessCheckbox.checked;
+                edgeSoftnessRadius = parseInt(edgeSoftnessSlider.value);
+                edgeSoftnessValueSpan.textContent = edgeSoftnessRadius;
+
+                enableEdgeSoftnessCheckbox.onchange = () => { 
+                    useEdgeSoftness = enableEdgeSoftnessCheckbox.checked; 
+                    if (isStaticImageMode && currentStaticImage) processStaticImage(currentStaticImage); 
+                };
+                edgeSoftnessSlider.oninput = () => {
+                    edgeSoftnessRadius = parseInt(edgeSoftnessSlider.value);
+                    edgeSoftnessValueSpan.textContent = edgeSoftnessRadius;
+                    if (useEdgeSoftness && isStaticImageMode && currentStaticImage) processStaticImage(currentStaticImage); 
+                };
+            }
+
+            // Initialize resolution selector
+            if(resolutionSelect) {
+                resolutionSelect.onchange = () => { 
+                    if (!isStaticImageMode) {
+                        const newResolution = resolutionSelect.value;
+                        if (newResolution !== currentResolution) {
+                            currentResolution = newResolution;
+                            if (video && video.srcObject) { 
+                                video.srcObject.getTracks().forEach(track => track.stop());
+                                video.srcObject = null; 
+                            }
+                            enableCam(); 
+                        }
+                    }
+                };
+            }
+            // Initialize background image input
+            if (backgroundImageInput) {
+                backgroundImageInput.onchange = (event) => {
+                    const file = event.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            importedBackgroundImage = new Image();
+                            importedBackgroundImage.onload = () => {
+                                if(backgroundPreview) {
+                                    backgroundPreview.src = e.target.result;
+                                    backgroundPreview.classList.remove('hidden');
+                                }
+                                if (isStaticImageMode && currentStaticImage) { 
+                                    processStaticImage(currentStaticImage);
+                                }
+                            }
+                            importedBackgroundImage.onerror = () => {
+                                importedBackgroundImage = null;
+                                if(backgroundPreview) backgroundPreview.classList.add('hidden');
+                            }
+                            importedBackgroundImage.src = e.target.result;
+                        }
+                        reader.readAsDataURL(file);
+                    }
+                };
+            }
+            // Initialize replace background checkbox
+            if (replaceBackgroundCheckbox) {
+                replaceBackgroundCheckbox.onchange = () => { 
+                    replaceBackgroundEnabled = replaceBackgroundCheckbox.checked;
+                    if (replaceBackgroundEnabled && !importedBackgroundImage) {
+                        if(statusElement) statusElement.textContent = "שים לב: רקע מוחלף אך אין תמונה.";
+                    }
+                     if (isStaticImageMode && currentStaticImage) { 
+                        processStaticImage(currentStaticImage);
+                    }
+                };
+            }
+
+            // Attach event listeners to export buttons
+            if (exportImageButton) exportImageButton.addEventListener('click', exportImage);
+            if (exportVideoButton) exportVideoButton.addEventListener('click', handleExportVideo);
+            
+            // Attach event listeners for static image mode
+            if (btnUploadStaticImage) btnUploadStaticImage.addEventListener('click', () => staticImageInput.click());
+            if (staticImageInput) staticImageInput.addEventListener('change', handleStaticImageUpload);
+            if (btnReturnToCamera) btnReturnToCamera.addEventListener('click', switchToVideoMode);
+
+            // Attach event listeners to panel toggle buttons
+            if (btnToggleLayers) btnToggleLayers.addEventListener('click', () => togglePanel('panelLayers'));
+            if (btnToggleProcessingOptions) btnToggleProcessingOptions.addEventListener('click', () => togglePanel('panelProcessingOptions'));
+            if (btnToggleCoverage) btnToggleCoverage.addEventListener('click', () => togglePanel('panelCoverage'));
+
+            // Setup info panel interactions
+            if (btnInfo && infoPanel && closeInfoPanel) {
+                btnInfo.addEventListener('click', () => {
+                    infoPanel.classList.remove('hidden');
+                });
+                closeInfoPanel.addEventListener('click', () => {
+                    infoPanel.classList.add('hidden');
+                });
+                infoPanel.addEventListener('click', (event) => { 
+                    if (event.target === infoPanel) { // Close if backdrop is clicked
+                        infoPanel.classList.add('hidden');
+                    }
+                });
+            }
+            // Initialize and start updating date/time and logo color
+            updateDateTime();
+            setInterval(updateDateTime, 1000); // Update every second
+            setInterval(cycleLogoColor, 2000); // Cycle logo color every 2 seconds
+        }
+
+        // Update UI elements based on whether static image mode is active
+        function updateUIMode() {
+            if (isStaticImageMode) {
+                video.classList.add('hidden');
+                webcamPlaceholder.classList.add('hidden');
+                staticImageDisplay.classList.remove('hidden'); 
+                outputCanvas.classList.remove('hidden'); 
+                btnUploadStaticImage.classList.add('hidden');
+                btnReturnToCamera.classList.remove('hidden');
+                if(exportVideoButton) exportVideoButton.disabled = true; 
+                if(resolutionSelect) resolutionSelect.disabled = true;
+            } else {
+                video.classList.remove('hidden');
+                staticImageDisplay.classList.add('hidden'); 
+                btnUploadStaticImage.classList.remove('hidden');
+                btnReturnToCamera.classList.add('hidden');
+                if(exportVideoButton) exportVideoButton.disabled = false;
+                if(resolutionSelect) resolutionSelect.disabled = false;
+                 if (video.srcObject) { 
+                    webcamPlaceholder.classList.add('hidden');
+                } else { 
+                    webcamPlaceholder.classList.remove('hidden');
+                    video.classList.add('hidden'); 
+                }
+            }
+        }
+
+        // Switch from static image mode back to live video mode
+        function switchToVideoMode() {
+            isStaticImageMode = false;
+            currentStaticImage = null;
+            if(staticImageDisplay) staticImageDisplay.src = ""; 
+            updateUIMode();
+            if (imageSegmenterInstance) { 
+                 imageSegmenterInstance.setOptions({ runningMode: "VIDEO" });
+            }
+            if(canvasCtx && canvasElement) canvasCtx.clearRect(0,0,canvasElement.width, canvasElement.height); 
+            enableCam(); 
+        }
+
+        // Handle uploaded static image
+        function handleStaticImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        isStaticImageMode = true;
+                        currentStaticImage = img; 
+                        if (video.srcObject) { // Stop webcam if it's running
+                            video.srcObject.getTracks().forEach(track => track.stop());
+                            video.srcObject = null;
+                        }
+                        updateUIMode();
+                        // Set canvas and image display dimensions
+                        canvasElement.width = img.width;
+                        canvasElement.height = img.height;
+                        staticImageDisplay.width = img.width;
+                        staticImageDisplay.height = img.height;
+                        staticImageDisplay.src = img.src; 
+                        processStaticImage(img); // Process the uploaded image
+                    };
+                    img.onerror = () => {
+                        if(statusElement) statusElement.textContent = "שגיאה בטעינת התמונה.";
+                        isStaticImageMode = false; 
+                        updateUIMode();
+                    }
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+            if(event.target) event.target.value = null; // Reset file input
+        }
+
+        // Process a static image for segmentation
+        async function processStaticImage(imageElement) {
+            if (!imageSegmenterInstance || !imageElement) return;
+            if(statusElement) statusElement.textContent = "מעבד תמונה סטטית...";
+            try {
+                await imageSegmenterInstance.setOptions({ runningMode: "IMAGE" });
+                canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+                
+                const backgroundLegendEntry = legend.find(s => s.id === 'background');
+                const isBackgroundSegmentChecked = backgroundLegendEntry ? backgroundLegendEntry.checked : false;
+
+                // Draw base image (original or imported background)
+                if (replaceBackgroundEnabled && importedBackgroundImage && !isBackgroundSegmentChecked) {
+                    const bgAspect = importedBackgroundImage.naturalWidth / importedBackgroundImage.naturalHeight;
+                    const canvasAspect = canvasElement.width / canvasElement.height;
+                    let sx=0, sy=0, sWidth=importedBackgroundImage.naturalWidth, sHeight=importedBackgroundImage.naturalHeight;
+                    if (bgAspect > canvasAspect) { 
+                        sHeight = importedBackgroundImage.naturalHeight; sWidth = sHeight * canvasAspect;
+                        sx = (importedBackgroundImage.naturalWidth - sWidth) / 2;
+                    } else { 
+                        sWidth = importedBackgroundImage.naturalWidth; sHeight = sWidth / canvasAspect;
+                        sy = (importedBackgroundImage.naturalHeight - sHeight) / 2;
+                    }
+                    canvasCtx.drawImage(importedBackgroundImage, sx, sy, sWidth, sHeight, 0, 0, canvasElement.width, canvasElement.height);
+                } else {
+                    canvasCtx.drawImage(imageElement, 0, 0, canvasElement.width, canvasElement.height);
+                }
+
+                // Perform segmentation
+                imageSegmenterInstance.segment(canvasElement, (result) => { 
+                    if (!result || !result.categoryMask) {
+                        if(statusElement) statusElement.textContent = "שגיאה בפילוח תמונה סטטית.";
+                        return;
+                    }
+                    let imageDataToProcess = canvasCtx.getImageData(0, 0, canvasElement.width, canvasElement.height);
+                    const data = imageDataToProcess.data;
+                    let categoryMaskData = result.categoryMask.getAsUint8Array();
+                    const maskWidthOriginal = result.categoryMask.width;
+                    const maskHeightOriginal = result.categoryMask.height;
+                    if (useSmoothing) categoryMaskData = smoothCategoryMask(categoryMaskData, maskWidthOriginal, maskHeightOriginal);
+                    
+                    let processedConfidenceMasks = result.confidenceMasks;
+                    if (useEdgeSoftness && edgeSoftnessRadius > 0 && result.confidenceMasks) {
+                        processedConfidenceMasks = result.confidenceMasks.map(mask => {
+                            if (mask && mask.data) {
+                                const blurredData = boxBlurFloat32Array(mask.data, mask.width, mask.height, edgeSoftnessRadius);
+                                return { ...mask, data: blurredData };
+                            }
+                            return mask;
+                        });
+                    }
+
+                    // Apply segmentation effects (color overlays, transparency)
+                    for (let y = 0; y < canvasElement.height; y++) {
+                        for (let x = 0; x < canvasElement.width; x++) {
+                            const canvasPixelIdx = (y * canvasElement.width + x) * 4;
+                            const maskX = Math.floor((x / canvasElement.width) * maskWidthOriginal);
+                            const maskY = Math.floor((y / canvasElement.height) * maskHeightOriginal);
+                            const maskPixelFlatIdx = maskY * maskWidthOriginal + maskX;
+                            const categoryIndex = categoryMaskData[maskPixelFlatIdx];
+                            const segment = legend.find(s => s.maskIndex === categoryIndex);
+
+                            if (segment) {
+                                const segmentConfidence = processedConfidenceMasks?.[categoryIndex]?.data?.[maskPixelFlatIdx] ?? 0;
+                                if (segment.checked) { // If segment is "hidden" (checkbox checked)
+                                    if (segment.id === 'background' && replaceBackgroundEnabled && importedBackgroundImage) {
+                                         if (segmentConfidence >= globalThreshold) data[canvasPixelIdx + 3] = 0; // Make imported background transparent for this segment
+                                    } else if (segment.id === 'clothes' && selectedClothesColor) { 
+                                         // If clothes are hidden but custom color is selected, still apply color (effectively showing colored clothes)
+                                         // This logic might need review based on desired behavior for "hidden" + "custom color"
+                                         const colorRGB = hexToRgb(selectedClothesColor);
+                                         if (colorRGB && segmentConfidence >= globalThreshold) {
+                                            data[canvasPixelIdx] = colorRGB.r; data[canvasPixelIdx + 1] = colorRGB.g; data[canvasPixelIdx + 2] = colorRGB.b;
+                                            data[canvasPixelIdx + 3] = 255; 
+                                         }
+                                    } else { // Default "כתם" (color overlay) for other hidden segments
+                                        const color = segment.color; let alpha = 200;
+                                        if (segmentConfidence >= globalThreshold) alpha = Math.floor(segmentConfidence * 180 + 75);
+                                        else if (!processedConfidenceMasks?.[categoryIndex]?.data) alpha = 150; // Fallback alpha
+                                        data[canvasPixelIdx]=color[0]; data[canvasPixelIdx+1]=color[1]; data[canvasPixelIdx+2]=color[2]; data[canvasPixelIdx+3]=alpha;
+                                    }
+                                } else { // Segment not hidden (checkbox unchecked)
+                                    if (segment.id === 'clothes' && selectedClothesColor) { // Apply custom clothes color
+                                        const colorRGB = hexToRgb(selectedClothesColor);
+                                        if (colorRGB && segmentConfidence >= globalThreshold) {
+                                           data[canvasPixelIdx] = colorRGB.r; data[canvasPixelIdx + 1] = colorRGB.g; data[canvasPixelIdx + 2] = colorRGB.b;
+                                           data[canvasPixelIdx + 3] = 255; // Full opacity for custom color
+                                        }
+                                    }
+                                    // If not clothes with custom color, or confidence too low, base image pixel remains.
+                                }
+                            }
+                        }
+                    }
+                    canvasCtx.putImageData(imageDataToProcess, 0, 0);
+                    if(statusElement) statusElement.textContent = "תמונה סטטית עובדה. מוכנה לייצוא.";
+                });
+            } catch (error) {
+                console.error("Error processing static image:", error);
+                if(statusElement) statusElement.textContent = "שגיאה בעיבוד תמונה סטטית.";
+            }
+        }
+
+        // Disable or enable navigation buttons
+        function setNavButtonsDisabled(disabled) {
+            [btnToggleLayers, btnToggleProcessingOptions, btnToggleCoverage, exportImageButton, exportVideoButton, btnUploadStaticImage, btnReturnToCamera, btnInfo].forEach(button => {
+                if (button) button.disabled = disabled;
+            });
+        }
+        
+        // Update active state of panel toggle buttons
+        function updateNavButtonStates() {
+            const navButtonsMap = {
+                'panelLayers': btnToggleLayers,
+                'panelProcessingOptions': btnToggleProcessingOptions,
+                'panelCoverage': btnToggleCoverage
+            };
+            Object.keys(navButtonsMap).forEach(panelId => {
+                const button = navButtonsMap[panelId];
+                if (button) button.classList.toggle('active', panelId === activePanelId);
+            });
+        }
+
+        // Toggle visibility of control panels
+        function togglePanel(panelIdToShow) {
+            const controlPanelsDiv = document.getElementById('controlPanelsContainer'); 
+            if (!panelLayers || !panelProcessingOptions || !panelCoverage || !controlPanelsDiv) return;
+            const panelToShowElement = document.getElementById(panelIdToShow);
+            if (!panelToShowElement) return;
+
+            if (activePanelId === panelIdToShow) { // If clicking the active panel's button, close it
+                panelToShowElement.classList.add('hidden');
+                controlPanelsDiv.classList.add('hidden'); 
+                activePanelId = null;
+            } else { // Open the new panel
+                controlPanelsDiv.classList.remove('hidden'); 
+                [panelLayers, panelProcessingOptions, panelCoverage].forEach(panel => {
+                    if (panel) panel.classList.toggle('hidden', panel.id !== panelIdToShow);
+                });
+                activePanelId = panelIdToShow;
+            }
+            updateNavButtonStates();
+        }
+
+        // Create and initialize the ImageSegmenter instance
+        async function createImageSegmenterAndStart() { 
+            if (!FilesetResolver || !ImageSegmenter) { 
+                if(statusElement) statusElement.textContent = 'שגיאה: רכיבי MediaPipe לא יובאו.'; return;
+            }
+            if(statusElement) statusElement.textContent = 'טוען מודל פילוח תמונה...';
+            try {
+                const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm");
+                imageSegmenterInstance = await ImageSegmenter.createFromOptions(vision, {
+                    baseOptions: { 
+                        modelAssetPath: "https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/latest/selfie_multiclass_256x256.tflite", 
+                        delegate: "GPU" 
+                    },
+                    runningMode: "VIDEO", outputCategoryMask: true, outputConfidenceMasks: true,
+                });
+                if(statusElement) statusElement.textContent = 'מודל נטען. ממתין למצלמה...';
+                switchToVideoMode(); // Attempt to start with video mode
+            } catch (error) { 
+                console.error("Error creating ImageSegmenter:", error);
+                if(statusElement) statusElement.textContent = 'שגיאה בטעינת מודל: ' + error.message; 
+            }
+        }
+
+        // Enable and start the webcam stream
+        function enableCam() { 
+            if (isStaticImageMode) { updateUIMode(); return; } // Don't enable cam if in static image mode
+            if (!imageSegmenterInstance) { if(statusElement) statusElement.textContent = 'מודל פילוח עדיין בטעינה...'; setTimeout(enableCam, 200); return; }
+            if (!video || !navigator.mediaDevices) { if(statusElement) statusElement.textContent = 'שגיאה: וידאו/מדיה לא זמינים.'; return; }
+            
+            currentResolution = resolutionSelect.value; 
+            const [widthStr, heightStr] = currentResolution.split('x');
+            const constraints = { video: { width: { ideal: parseInt(widthStr) }, height: { ideal: parseInt(heightStr) } } };
+            if(statusElement) statusElement.textContent = `מנסה להפעיל מצלמה ${currentResolution}...`;
+            
+            navigator.mediaDevices.getUserMedia(constraints)
+                .then(stream => {
+                    video.srcObject = stream;
+                    video.onloadedmetadata = () => { 
+                        if (video && !isStaticImageMode) { // Double check not in static mode
+                            updateUIMode(); 
+                            canvasElement.width = video.videoWidth; canvasElement.height = video.videoHeight;
+                            video.play();
+                            if(statusElement) statusElement.textContent = `מצלמה (${video.videoWidth}x${video.videoHeight}). פילוח...`;
+                            predictWebcam(); 
+                        }
+                    };
+                })
+                .catch(err => {
+                    console.error("Error accessing webcam:", err);
+                    if(statusElement) statusElement.textContent = `שגיאה במצלמה (${currentResolution}): ${err.name}.`;
+                    isStaticImageMode = false; updateUIMode(); // Ensure UI reflects camera failure
+                });
+        }
+        
+        // Smooth the category mask using a simple majority filter
+        function smoothCategoryMask(maskData, width, height) {
+            const smoothedMask = new Uint8Array(maskData.length);
+            for (let y = 1; y < height - 1; y++) {
+                for (let x = 1; x < width - 1; x++) {
+                    const currentIndex = y * width + x;
+                    // Collect categories of 3x3 neighborhood
+                    const neighbors = [
+                        maskData[(y - 1) * width + (x - 1)], maskData[(y - 1) * width + x], maskData[(y - 1) * width + (x + 1)],
+                        maskData[y * width + (x - 1)],       maskData[currentIndex],       maskData[y * width + (x + 1)],
+                        maskData[(y + 1) * width + (x - 1)], maskData[(y + 1) * width + x], maskData[(y + 1) * width + (x + 1)],
+                    ];
+                    const categoryCounts = {};
+                    neighbors.forEach(cat => { categoryCounts[cat] = (categoryCounts[cat] || 0) + 1; });
+                    // Find majority category
+                    let majorityCategory = maskData[currentIndex]; let maxCount = 0;
+                    for (const category in categoryCounts) if (categoryCounts[category] > maxCount) { maxCount = categoryCounts[category]; majorityCategory = parseInt(category); }
+                    // Apply if majority is strong (e.g., 5 out of 9 pixels)
+                    smoothedMask[currentIndex] = (maxCount >= 5) ? majorityCategory : maskData[currentIndex];
+                }
+            }
+            // Keep borders as is (or could copy from original maskData)
+            for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) if (x === 0 || x === width - 1 || y === 0 || y === height - 1) smoothedMask[y * width + x] = maskData[y * width + x];
+            return smoothedMask;
+        }
+
+        // Apply box blur to a Float32Array (used for confidence masks)
+        function boxBlurFloat32Array(data, width, height, radius) {
+            if (radius === 0) return data.slice(); // No blur if radius is 0
+            const blurredData = new Float32Array(data.length);
+            for (let i = 0; i < data.length; i++) {
+                let total = 0;
+                let count = 0;
+                const y = Math.floor(i / width);
+                const x = i % width;
+
+                // Iterate over the blur box
+                for (let dy = -radius; dy <= radius; dy++) {
+                    for (let dx = -radius; dx <= radius; dx++) {
+                        const currentY = y + dy;
+                        const currentX = x + dx;
+                        if (currentY >= 0 && currentY < height && currentX >= 0 && currentX < width) {
+                            total += data[currentY * width + currentX];
+                            count++;
+                        }
+                    }
+                }
+                blurredData[i] = count > 0 ? total / count : data[i]; // Average or original if no neighbors
+            }
+            return blurredData;
+        }
+        
+        // Logic for applying segmentation effects for image/video export
+        function applyExportSegmentationLogic(baseImageData, segmentationResult, currentLegend, currentGlobalThreshold, useSmoothingEnabled, isBgReplaced, bgImageElement, useEdgeSoftnessEnabled, currentEdgeSoftnessRadius, currentSelectedClothesColor) {
+            const targetWidth = baseImageData.width;
+            const targetHeight = baseImageData.height;
+
+            const exportCanvas = document.createElement('canvas');
+            exportCanvas.width = targetWidth;
+            exportCanvas.height = targetHeight;
+            const exportCtx = exportCanvas.getContext('2d');
+            exportCtx.clearRect(0, 0, targetWidth, targetHeight); 
+
+            const backgroundLegendEntry = currentLegend.find(s => s.id === 'background');
+            const isBackgroundSegmentChecked = backgroundLegendEntry ? backgroundLegendEntry.checked : false;
+
+            // Step 1: Draw base layer (imported background or original source)
+            if (isBgReplaced && bgImageElement) {
+                if (!isBackgroundSegmentChecked) { // Only draw if background segment is NOT hidden
+                    const bgAspect = bgImageElement.naturalWidth / bgImageElement.naturalHeight;
+                    const canvasAspect = targetWidth / targetHeight;
+                    let sx=0, sy=0, sWidth=bgImageElement.naturalWidth, sHeight=bgImageElement.naturalHeight;
+                    if (bgAspect > canvasAspect) { 
+                        sHeight = bgImageElement.naturalHeight; sWidth = sHeight * canvasAspect;
+                        sx = (bgImageElement.naturalWidth - sWidth) / 2;
+                    } else { 
+                        sWidth = bgImageElement.naturalWidth; sHeight = sWidth / canvasAspect;
+                        sy = (bgImageElement.naturalHeight - sHeight) / 2;
+                    }
+                    exportCtx.drawImage(bgImageElement, sx, sy, sWidth, sHeight, 0, 0, targetWidth, targetHeight);
+                }
+                // If background is hidden, the canvas remains transparent here.
+            } else {
+                // No background replacement, draw the original source image data
+                exportCtx.putImageData(baseImageData, 0, 0);
+            }
+
+            let finalImageData = exportCtx.getImageData(0, 0, targetWidth, targetHeight);
+            let data = finalImageData.data;
+
+            if (segmentationResult && segmentationResult.categoryMask) {
+                let categoryMaskData = segmentationResult.categoryMask.getAsUint8Array();
+                const maskWidthOriginal = segmentationResult.categoryMask.width;
+                const maskHeightOriginal = segmentationResult.categoryMask.height;
+                if (useSmoothingEnabled) {
+                    categoryMaskData = smoothCategoryMask(categoryMaskData, maskWidthOriginal, maskHeightOriginal);
+                }
+                
+                let processedConfidenceMasks = segmentationResult.confidenceMasks;
+                if (useEdgeSoftnessEnabled && currentEdgeSoftnessRadius > 0 && segmentationResult.confidenceMasks) {
+                    processedConfidenceMasks = segmentationResult.confidenceMasks.map(mask => {
+                        if (mask && mask.data) {
+                            const blurredData = boxBlurFloat32Array(mask.data, mask.width, mask.height, currentEdgeSoftnessRadius);
+                            return { ...mask, data: blurredData };
+                        }
+                        return mask;
+                    });
+                }
+
+                // Step 2: Apply custom clothes color if clothes are NOT hidden by checkbox
+                const clothesSegment = currentLegend.find(s => s.id === 'clothes');
+                if (clothesSegment && !clothesSegment.checked && currentSelectedClothesColor) {
+                    const colorRGB = hexToRgb(currentSelectedClothesColor);
+                    if (colorRGB) {
+                        for (let y = 0; y < targetHeight; y++) {
+                            for (let x = 0; x < targetWidth; x++) {
+                                const pixelIdx = (y * targetWidth + x) * 4;
+                                const maskX = Math.floor((x / targetWidth) * maskWidthOriginal);
+                                const maskY = Math.floor((y / targetHeight) * maskHeightOriginal);
+                                const maskPixelFlatIdx = maskY * maskWidthOriginal + maskX;
+                                const categoryIndex = categoryMaskData[maskPixelFlatIdx];
+                                if (categoryIndex === clothesSegment.maskIndex) { // Is it a clothes pixel?
+                                    const segmentConfidence = processedConfidenceMasks?.[categoryIndex]?.data?.[maskPixelFlatIdx] ?? 0;
+                                    if (segmentConfidence >= currentGlobalThreshold) {
+                                        data[pixelIdx] = colorRGB.r;
+                                        data[pixelIdx + 1] = colorRGB.g;
+                                        data[pixelIdx + 2] = colorRGB.b;
+                                        data[pixelIdx + 3] = 255; // Full opacity for custom color
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+
+                // Step 3: Apply transparency for ALL segments that are CHECKED (hidden)
+                // This makes the underlying layer (original video or imported background) show through
+                for (let y = 0; y < targetHeight; y++) {
+                    for (let x = 0; x < targetWidth; x++) {
+                        const pixelIdx = (y * targetWidth + x) * 4;
+                        const maskX = Math.floor((x / targetWidth) * maskWidthOriginal);
+                        const maskY = Math.floor((y / targetHeight) * maskHeightOriginal);
+                        const maskPixelFlatIdx = maskY * maskWidthOriginal + maskX;
+                        
+                        const categoryIndex = categoryMaskData[maskPixelFlatIdx];
+                        const segment = currentLegend.find(s => s.maskIndex === categoryIndex);
+
+                        if (segment && segment.checked) { // If segment is marked to be hidden
+                            // Make the pixel transparent if confidence is high enough
+                            // or if confidence data is unavailable for this specific category (fallback to hide)
+                            if (processedConfidenceMasks?.[categoryIndex]?.data?.[maskPixelFlatIdx] >= currentGlobalThreshold) {
+                                data[pixelIdx + 3] = 0; // Set alpha to 0 (transparent)
+                            } else if (!processedConfidenceMasks?.[categoryIndex]?.data && categoryIndex < (processedConfidenceMasks?.length || 0) ) { 
+                                // No confidence data for this category, assume hide if checked
+                                data[pixelIdx + 3] = 0; 
+                            } else if (categoryIndex >= (processedConfidenceMasks?.length || 0) ) {
+                                // Category index out of bounds for confidence masks, assume hide if checked
+                                data[pixelIdx + 3] = 0;
+                            }
+                        }
+                    }
+                }
+            }
+            return finalImageData;
+        }
+        
+        // Main loop for processing webcam video frames
+        async function predictWebcam() {
+            if (isStaticImageMode) { requestAnimationFrame(predictWebcam); return; } // Don't run if in static image mode
+            if (!video || !video.srcObject || video.paused || video.ended || !canvasElement || !imageSegmenterInstance) {
+                if (video && imageSegmenterInstance && !isStaticImageMode) { requestAnimationFrame(predictWebcam); } // Keep trying if components exist
+                return;
+            }
+            // Ensure canvas dimensions match video dimensions
+            if (canvasElement.width !== video.videoWidth || canvasElement.height !== video.videoHeight) {
+                 canvasElement.width = video.videoWidth; canvasElement.height = video.videoHeight;
+            }
+            const startTimeMs = performance.now();
+            if (video.currentTime !== lastVideoTime) { // Process new frame
+                lastVideoTime = video.currentTime;
+                imageSegmenterInstance.segmentForVideo(video, startTimeMs, (result) => {
+                    if (isStaticImageMode || !canvasCtx || !canvasElement) return; // Exit if switched to static mode or canvas is gone
+                    
+                    if (isRecordingVideo) { // If recording, apply export logic to frame
+                        const currentFrameCanvas = document.createElement('canvas');
+                        currentFrameCanvas.width = video.videoWidth;
+                        currentFrameCanvas.height = video.videoHeight;
+                        const frameCtx = currentFrameCanvas.getContext('2d');
+                        frameCtx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+                        const currentFrameImageData = frameCtx.getImageData(0, 0, video.videoWidth, video.videoHeight);
+                        // Apply the same logic as export for consistent output during recording
+                        const exportFrameImageData = applyExportSegmentationLogic(currentFrameImageData, result, legend, globalThreshold, useSmoothing, replaceBackgroundEnabled, importedBackgroundImage, useEdgeSoftness, edgeSoftnessRadius, selectedClothesColor);
+                        canvasCtx.clearRect(0,0, canvasElement.width, canvasElement.height);
+                        canvasCtx.putImageData(exportFrameImageData, 0, 0);
+
+                    } else { // Live display logic
+                        canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height); 
+                        const backgroundLegendEntry = legend.find(s => s.id === 'background');
+                        const isBackgroundSegmentChecked = backgroundLegendEntry ? backgroundLegendEntry.checked : false;
+
+                        // Draw base: imported background or live video
+                        if (replaceBackgroundEnabled && importedBackgroundImage && !isBackgroundSegmentChecked) {
+                            const bgAspect = importedBackgroundImage.naturalWidth / importedBackgroundImage.naturalHeight;
+                            const canvasAspect = canvasElement.width / canvasElement.height;
+                            let sx=0, sy=0, sWidth=importedBackgroundImage.naturalWidth, sHeight=importedBackgroundImage.naturalHeight;
+                            if (bgAspect > canvasAspect) { 
+                                sHeight = importedBackgroundImage.naturalHeight; sWidth = sHeight * canvasAspect;
+                                sx = (importedBackgroundImage.naturalWidth - sWidth) / 2;
+                            } else { 
+                                sWidth = importedBackgroundImage.naturalWidth; sHeight = sWidth / canvasAspect;
+                                sy = (importedBackgroundImage.naturalHeight - sHeight) / 2;
+                            }
+                            canvasCtx.drawImage(importedBackgroundImage, sx, sy, sWidth, sHeight, 0, 0, canvasElement.width, canvasElement.height);
+                        } else {
+                            canvasCtx.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
+                        }
+
+                        let imageDataToProcess = canvasCtx.getImageData(0, 0, canvasElement.width, canvasElement.height);
+                        const data = imageDataToProcess.data; 
+
+                        if (result.categoryMask && result.confidenceMasks) {
+                            let categoryMaskData = result.categoryMask.getAsUint8Array();
+                            const maskWidthOriginal = result.categoryMask.width; 
+                            const maskHeightOriginal = result.categoryMask.height;
+                            if (useSmoothing) categoryMaskData = smoothCategoryMask(categoryMaskData, maskWidthOriginal, maskHeightOriginal);
+                            
+                            let processedConfidenceMasks = result.confidenceMasks;
+                            if (useEdgeSoftness && edgeSoftnessRadius > 0 && result.confidenceMasks) {
+                                processedConfidenceMasks = result.confidenceMasks.map(mask => {
+                                    if (mask && mask.data) {
+                                        const blurredData = boxBlurFloat32Array(mask.data, mask.width, mask.height, edgeSoftnessRadius);
+                                        return { ...mask, data: blurredData };
+                                    }
+                                    return mask;
+                                });
+                            }
+
+                            // Apply segmentation effects for live display
+                            for (let y = 0; y < canvasElement.height; y++) {
+                                for (let x = 0; x < canvasElement.width; x++) {
+                                    const canvasPixelIdx = (y * canvasElement.width + x) * 4; 
+                                    const maskX = Math.floor((x / canvasElement.width) * maskWidthOriginal); 
+                                    const maskY = Math.floor((y / canvasElement.height) * maskHeightOriginal);
+                                    const maskPixelFlatIdx = maskY * maskWidthOriginal + maskX; 
+                                    const categoryIndex = categoryMaskData[maskPixelFlatIdx]; 
+                                    const segment = legend.find(s => s.maskIndex === categoryIndex); 
+                                    const segmentConfidence = processedConfidenceMasks?.[categoryIndex]?.data?.[maskPixelFlatIdx] ?? 0;
+
+                                    if (segment) {
+                                        if (segment.id === 'clothes' && selectedClothesColor && !segment.checked) { // Apply custom color if clothes and NOT hidden
+                                            const colorRGB = hexToRgb(selectedClothesColor);
+                                            if (colorRGB && segmentConfidence >= globalThreshold) {
+                                                data[canvasPixelIdx] = colorRGB.r; data[canvasPixelIdx + 1] = colorRGB.g; data[canvasPixelIdx + 2] = colorRGB.b;
+                                                data[canvasPixelIdx + 3] = 255; // Full opacity
+                                            }
+                                        } else if (segment.checked) { // If segment is "hidden" (checkbox checked)
+                                            if (segment.id === 'background' && replaceBackgroundEnabled && importedBackgroundImage) {
+                                                 if (segmentConfidence >= globalThreshold) data[canvasPixelIdx + 3] = 0; // Hide imported background for this segment
+                                            } else { // Default "כתם" (color overlay) for other hidden segments or original background
+                                                const color = segment.color; let alpha = 200;
+                                                if (segmentConfidence >= globalThreshold) alpha = Math.floor(segmentConfidence * 180 + 75);
+                                                else if (!processedConfidenceMasks?.[categoryIndex]?.data) alpha = 150; 
+                                                data[canvasPixelIdx]=color[0]; data[canvasPixelIdx+1]=color[1]; data[canvasPixelIdx+2]=color[2]; data[canvasPixelIdx+3]=alpha;
+                                            }
+                                        }
+                                        // If segment not hidden and not clothes with custom color, pixel remains from base draw (video or imported bg)
+                                    }
+                                }
+                            }
+                            canvasCtx.putImageData(imageDataToProcess, 0, 0); 
+                        }
+                    }
+                    
+                    // Calculate and display coverage percentages if panel is open
+                    const categoryCounts = {}; legend.forEach(item => { if (item.maskIndex !== undefined) categoryCounts[item.maskIndex] = 0; });
+                    let totalPixelsInMask = 0;
+                    if (result.categoryMask) {
+                        let categoryMaskData = result.categoryMask.getAsUint8Array(); 
+                        totalPixelsInMask = categoryMaskData.length;
+                        for (let i = 0; i < categoryMaskData.length; i++) { const categoryIndex = categoryMaskData[i]; if (categoryCounts[categoryIndex] !== undefined) categoryCounts[categoryIndex]++; }
+                        if (coverageResultsDiv && panelCoverage && !panelCoverage.classList.contains('hidden')) { 
+                            coverageResultsDiv.innerHTML = ''; 
+                            legend.forEach(item => {
+                                if (item.maskIndex !== undefined && categoryCounts[item.maskIndex] !== undefined) {
+                                    const percentage = totalPixelsInMask > 0 ? ((categoryCounts[item.maskIndex] / totalPixelsInMask) * 100).toFixed(1) : 0;
+                                    const coverageP = document.createElement('p'); coverageP.className = 'text-xs text-gray-700'; 
+                                    coverageP.innerHTML = `${item.name}: <span class="font-bold" style="color: rgb(${item.color.join(',')});">${percentage}%</span>`;
+                                    coverageResultsDiv.appendChild(coverageP);
+                                }
+                            });
+                        }
+                    }
+
+                    // Update recording status and timer
+                    if (isRecordingVideo) {
+                        const elapsedTime = Date.now() - recordingStartTime;
+                        const timeLeft = Math.max(0, (RECORDING_DURATION - elapsedTime) / 1000);
+                        if (statusElement) statusElement.textContent = `מקליט וידאו... ${timeLeft.toFixed(1)} שנ'`;
+                        if (elapsedTime >= RECORDING_DURATION && mediaRecorder && mediaRecorder.state === "recording") mediaRecorder.stop(); 
+                    }
+                });
+            }
+            if (!isStaticImageMode) requestAnimationFrame(predictWebcam); // Continue the loop for video
+        }
+        
+        // Export the current canvas content as a PNG image
+        async function exportImage() {
+            if (isRecordingVideo && !isStaticImageMode) { if(statusElement) statusElement.textContent = "לא ניתן לייצא תמונה בזמן הקלטה."; return; }
+            if (!imageSegmenterInstance) { if(statusElement) statusElement.textContent = "מודל לא נטען. לא ניתן לייצא."; return; }
+            if (!isStaticImageMode && (!video || video.paused || video.ended)) { if(statusElement) statusElement.textContent = "מצלמה לא פעילה. לא ניתן לייצא."; return; }
+            if (isStaticImageMode && !currentStaticImage) { if(statusElement) statusElement.textContent = "אין תמונה סטטית לייצא."; return;}
+            
+            if (exportImageButton) exportImageButton.disabled = true; 
+            setNavButtonsDisabled(true); 
+            if (statusElement) statusElement.textContent = "מעבד תמונה לייצוא...";
+
+            const sourceCanvas = document.createElement('canvas');
+            let sourceImageDataForExport;
+
+            // Get base image data (from static image or current video frame)
+            if (isStaticImageMode) { 
+                sourceCanvas.width = currentStaticImage.width; 
+                sourceCanvas.height = currentStaticImage.height;
+                sourceCanvas.getContext('2d').drawImage(currentStaticImage, 0, 0);
+            } else { 
+                sourceCanvas.width = video.videoWidth; 
+                sourceCanvas.height = video.videoHeight;
+                sourceCanvas.getContext('2d').drawImage(video, 0, 0, sourceCanvas.width, sourceCanvas.height);
+            }
+            sourceImageDataForExport = sourceCanvas.getContext('2d').getImageData(0,0,sourceCanvas.width, sourceCanvas.height);
+            
+            try {
+                await imageSegmenterInstance.setOptions({ runningMode: "IMAGE" }); // Switch to image mode for segmentation
+                imageSegmenterInstance.segment(sourceCanvas, (result) => { 
+                    if (result && result.categoryMask) {
+                        // Apply segmentation logic to the base image data
+                        const finalExportImageData = applyExportSegmentationLogic(sourceImageDataForExport, result, legend, globalThreshold, useSmoothing, replaceBackgroundEnabled, importedBackgroundImage, useEdgeSoftness, edgeSoftnessRadius, selectedClothesColor);
+                        
+                        const finalExportCanvas = document.createElement('canvas');
+                        finalExportCanvas.width = finalExportImageData.width; 
+                        finalExportCanvas.height = finalExportImageData.height;
+                        finalExportCanvas.getContext('2d').putImageData(finalExportImageData, 0, 0); 
+
+                        // Create download link
+                        const dataUrl = finalExportCanvas.toDataURL('image/png');
+                        const link = document.createElement('a'); link.href = dataUrl; link.download = 'segmented_image_export.png'; 
+                        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                        if (statusElement) statusElement.textContent = "התמונה יוצאה בהצלחה!";
+                    } else { if (statusElement) statusElement.textContent = "שגיאה: לא התקבלו מסכות לייצוא."; }
+                    
+                    // Revert to video mode if applicable
+                    if (!isStaticImageMode && imageSegmenterInstance) {
+                         imageSegmenterInstance.setOptions({ runningMode: "VIDEO" }); 
+                    }
+                    
+                    if (exportImageButton) exportImageButton.disabled = false;
+                    setNavButtonsDisabled(false); 
+                    updateUIMode(); 
+
+                    if (!isStaticImageMode) { // Resume webcam processing if it was active
+                        requestAnimationFrame(predictWebcam);
+                    }
+                    
+                    // Clear status message after a delay
+                    setTimeout(() => { 
+                        if(statusElement && statusElement.textContent.includes("התמונה יוצאה בהצלחה!")) { 
+                            statusElement.textContent = isStaticImageMode ? "תמונה סטטית עובדה." : `מצלמה (${video.videoWidth}x${video.videoHeight}). פילוח...`;
+                        }
+                    }, 3000);
+                });
+            } catch(error) { 
+                console.error("Error exporting image:", error);
+                if (statusElement) statusElement.textContent = "שגיאה בייצוא תמונה.";
+                if (imageSegmenterInstance && !isStaticImageMode) {
+                     imageSegmenterInstance.setOptions({ runningMode: "VIDEO" }); 
+                }
+                if (exportImageButton) exportImageButton.disabled = false;
+                setNavButtonsDisabled(false); 
+                updateUIMode();
+                if (!isStaticImageMode) { requestAnimationFrame(predictWebcam); } 
+            }
+        }
+
+        // Handle video export functionality
+        function handleExportVideo() {
+            if (isStaticImageMode) { if(statusElement) statusElement.textContent = "ייצוא וידאו לא זמין בתמונה סטטית."; return; }
+            if (!canvasElement || !video || video.paused || video.ended) { if(statusElement) statusElement.textContent = "מצלמה לא פעילה, לא ניתן לייצא."; return; }
+            if (!('MediaRecorder' in window)) { if(statusElement) statusElement.textContent = "MediaRecorder API לא נתמך."; return; }
+            
+            const originalButtonClasses = exportVideoButton.classList.toString(); 
+            exportVideoButton.classList.remove('bg-blue-500', 'hover:bg-blue-600'); 
+            exportVideoButton.classList.add('bg-red-700', 'hover:bg-red-800'); 
+            
+            // Update status UI for recording
+            if (statusContainer) statusContainer.classList.add('status-recording');
+            if (statusIcon) statusIcon.classList.add('text-white'); 
+            if (recordingIndicator) {
+                recordingIndicator.classList.remove('hidden');
+                recordingIndicator.classList.add('blinking-indicator');
+            }
+
+            const options = { mimeType: 'video/webm; codecs=vp9' };
+            if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                 options.mimeType = 'video/webm'; // Fallback if vp9 not supported
+                 if (!MediaRecorder.isTypeSupported(options.mimeType)) { 
+                     if (statusElement) statusElement.textContent = "פורמט WebM לא נתמך."; 
+                     exportVideoButton.className = originalButtonClasses; 
+                     if (statusContainer) statusContainer.classList.remove('status-recording');
+                     if (statusIcon) statusIcon.classList.remove('text-white');
+                     if (recordingIndicator) {
+                         recordingIndicator.classList.add('hidden');
+                         recordingIndicator.classList.remove('blinking-indicator');
+                     }
+                     return; 
+                 }
+            }
+            try { 
+                const stream = canvasElement.captureStream(30); // Capture at 30 FPS
+                mediaRecorder = new MediaRecorder(stream, options); 
+            } 
+            catch (e) { 
+                console.error("Error creating MediaRecorder:", e);
+                if (statusElement) statusElement.textContent = "שגיאה ביצירת מקליט וידאו."; 
+                exportVideoButton.className = originalButtonClasses; 
+                if (statusContainer) statusContainer.classList.remove('status-recording');
+                if (statusIcon) statusIcon.classList.remove('text-white');
+                if (recordingIndicator) {
+                    recordingIndicator.classList.add('hidden');
+                    recordingIndicator.classList.remove('blinking-indicator');
+                }
+                return; 
+            }
+            isRecordingVideo = true; 
+            recordedChunks = []; 
+            setNavButtonsDisabled(true); exportVideoButton.disabled = true; 
+            
+            mediaRecorder.ondataavailable = (event) => { if (event.data.size > 0) recordedChunks.push(event.data); };
+            
+            mediaRecorder.onstop = () => {
+                isRecordingVideo = false; 
+                setNavButtonsDisabled(false); updateUIMode(); 
+                exportVideoButton.className = originalButtonClasses; 
+                // Reset status UI
+                if (statusContainer) statusContainer.classList.remove('status-recording');
+                if (statusIcon) statusIcon.classList.remove('text-white'); 
+                if (recordingIndicator) {
+                    recordingIndicator.classList.add('hidden');
+                    recordingIndicator.classList.remove('blinking-indicator');
+                }
+                if (statusElement) statusElement.textContent = "מעבד וידאו...";
+                
+                const blob = new Blob(recordedChunks, { type: options.mimeType });
+                const url = URL.createObjectURL(blob); const a = document.createElement('a');
+                a.style.display = 'none'; a.href = url; a.download = 'segmented_video_export.webm';
+                document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url); document.body.removeChild(a);
+                if (statusElement) statusElement.textContent = "וידאו יוצא בהצלחה!";
+                
+                if (!isStaticImageMode) { // Resume webcam processing
+                    requestAnimationFrame(predictWebcam);
+                }
+                setTimeout(() => { 
+                    if(statusElement && statusElement.textContent.includes("וידאו יוצא בהצלחה!")) { 
+                         statusElement.textContent = `מצלמה (${video.videoWidth}x${video.videoHeight}). פילוח...`;
+                    }
+                }, 3000);
+            };
+            mediaRecorder.onerror = (event) => {
+                console.error("MediaRecorder error:", event.error);
+                isRecordingVideo = false; setNavButtonsDisabled(false); updateUIMode();
+                exportVideoButton.className = originalButtonClasses; 
+                if (statusContainer) statusContainer.classList.remove('status-recording');
+                if (statusIcon) statusIcon.classList.remove('text-white');
+                if (recordingIndicator) {
+                    recordingIndicator.classList.add('hidden');
+                    recordingIndicator.classList.remove('blinking-indicator');
+                }
+                if (statusElement) statusElement.textContent = `שגיאה בהקלטה: ${event.error.name}`;
+                if (!isStaticImageMode) { requestAnimationFrame(predictWebcam); } 
+            };
+            recordingStartTime = Date.now(); mediaRecorder.start(); 
+            if (statusElement) statusElement.textContent = "מתחיל הקלטת וידאו...";
+        }
+
+        // Convert HEX color to RGB object
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : null;
+        }
+
+        // Populate controls for segmentation layers (checkboxes, color pickers)
+        function populateControls() { 
+            if(!segmentControlsContainer) return; 
+            segmentControlsContainer.innerHTML = ''; // Clear existing controls
+            legend.forEach((item) => {
+                const div = document.createElement('div');
+                div.className = 'bg-gray-100 p-2 rounded-md flex items-center justify-between'; 
+                
+                const labelAndColorSpan = document.createElement('span');
+                labelAndColorSpan.className = 'flex items-center';
+
+                const colorPreview = document.createElement('span');
+                Object.assign(colorPreview.style, {
+                    display: 'inline-block', width: '16px', height: '16px', 
+                    backgroundColor: `rgb(${item.color.join(',')})`, 
+                    borderRadius: '3px', marginRight: '8px', border: '1px solid #ccc' 
+                });
+                labelAndColorSpan.appendChild(colorPreview);
+                
+                const labelText = document.createElement('span');
+                labelText.textContent = item.name;
+                labelText.className = 'text-xs sm:text-sm text-gray-700'; 
+                labelAndColorSpan.appendChild(labelText);
+                
+                div.appendChild(labelAndColorSpan);
+
+                const controlsWrapper = document.createElement('div');
+                controlsWrapper.className = 'flex items-center';
+
+                // Add color picker for 'clothes' segment
+                if (item.id === 'clothes') {
+                    const colorPicker = document.createElement('input');
+                    colorPicker.type = 'color';
+                    colorPicker.id = `colorpicker-${item.id}`;
+                    colorPicker.value = rgbToHex(item.color[0], item.color[1], item.color[2]); 
+                    colorPicker.className = 'ml-2'; 
+                    colorPicker.title = "בחר צבע לבגדים";
+                    colorPicker.oninput = (e) => {
+                        selectedClothesColor = e.target.value;
+                        if (isStaticImageMode && currentStaticImage) {
+                            processStaticImage(currentStaticImage);
+                        }
+                    };
+                    controlsWrapper.appendChild(colorPicker);
+                }
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox'; checkbox.id = `checkbox-${item.id}`;
+                checkbox.checked = item.checked; 
+                checkbox.className = 'form-checkbox ml-2'; 
+                checkbox.style.accentColor = `rgb(${item.color.join(',')})`; 
+                checkbox.onchange = () => { 
+                    const legendItem = legend.find(legItem => legItem.id === item.id );
+                    if(legendItem) legendItem.checked = checkbox.checked;
+                    if (isStaticImageMode && currentStaticImage) processStaticImage(currentStaticImage);
+                };
+                controlsWrapper.appendChild(checkbox); 
+                div.appendChild(controlsWrapper);
+                segmentControlsContainer.appendChild(div);
+            });
+        }
+        
+        // Convert RGB color components to HEX string
+        function rgbToHex(r, g, b) {
+            return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
+        }
+
+        // Main application initialization function
+        function mainAppInit() {
+            setupDOMReferencesAndListeners(); 
+            populateControls(); 
+            createImageSegmenterAndStart(); 
+            updateNavButtonStates(); 
+        }
+
+        // Start the application once the DOM is fully loaded
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mainAppInit);
+        else mainAppInit(); 
+    </script>
+</body>
+</html>

@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>ווידג'ט תיקון שפה</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --main: #36d399;
+      --main-dark: #17986c;
+      --bg: #fff;
+      --text: #191d21;
+      --shadow: 0 4px 28px #0002;
+      --radius: 20px;
+      --icon-size: 38px;
+    }
+    html, body {
+      margin: 0; padding: 0;
+      background: #f3f7f9;
+      min-height: 100vh;
+      font-family: 'Segoe UI', 'Arial', sans-serif;
+      box-sizing: border-box;
+      height: 100%;
+      direction: rtl;
+    }
+    /* ---------- Floating Widget ---------- */
+    #floating-widget {
+      position: fixed;
+      top: 3vw;
+      right: 3vw;
+      width: 340px;
+      max-width: 96vw;
+      z-index: 9999;
+      background: var(--bg);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px 20px 14px 20px;
+      box-sizing: border-box;
+      transition: box-shadow .15s, transform .2s;
+      display: flex;
+      flex-direction: column;
+      gap: 0.7em;
+      cursor: grab;
+      touch-action: none;
+      min-width: 220px;
+      animation: popin 0.6s cubic-bezier(.51,2,.54,.7);
+    }
+    @keyframes popin {
+      from { opacity: 0; transform: scale(0.85) translateY(70px);}
+      to { opacity: 1; transform: scale(1) translateY(0);}
+    }
+    #floating-widget.minimized {
+      width: 70px;
+      min-width: 55px;
+      min-height: 55px;
+      height: 70px;
+      overflow: hidden;
+      padding: 8px;
+      cursor: pointer;
+      transition: width .2s, min-width .2s, height .2s, padding .2s;
+      box-shadow: 0 3px 10px #0002;
+      justify-content: center;
+      align-items: center;
+      display: flex;
+      gap: 0;
+    }
+    /* ----- Top bar ----- */
+    .widget-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 4px;
+      min-height: 38px;
+      user-select: none;
+      cursor: move;
+    }
+    .heal-icon {
+      width: var(--icon-size);
+      height: var(--icon-size);
+      background: var(--bg);
+      border-radius: 50%;
+      border: 2.5px solid var(--main);
+      box-shadow: 0 1px 6px #1aaf7040;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: 7px;
+    }
+    /* ריפוי/צלב רפואי */
+    .heal-icon svg {
+      width: 23px; height: 23px; display: block;
+    }
+    .widget-title {
+      font-size: 1.14em;
+      font-weight: 700;
+      color: var(--main-dark);
+      letter-spacing: 0.03em;
+      flex: 1;
+      margin-left: 8px;
+      margin-right: 2px;
+      text-align: right;
+    }
+    .header-btns {
+      display: flex;
+      gap: 6px;
+    }
+    .icon-btn {
+      background: none;
+      border: none;
+      outline: none;
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background .13s;
+    }
+    .icon-btn:hover { background: #e8f8ef; }
+    .icon-btn svg { width: 20px; height: 20px;}
+    /* ----- Content ----- */
+    .widget-content {
+      display: flex;
+      flex-direction: column;
+      gap: 0.7em;
+    }
+    .widget-content.minimized { display: none; }
+    textarea {
+      width: 100%;
+      min-height: 60px;
+      border-radius: 10px;
+      border: 1.3px solid #e3e6eb;
+      font-size: 1em;
+      padding: 8px 10px;
+      background: #f7fafb;
+      color: var(--text);
+      resize: vertical;
+      direction: rtl;
+      transition: border .18s, box-shadow .17s;
+    }
+    textarea:focus {
+      border: 1.7px solid var(--main);
+      box-shadow: 0 0 0 1.7px #39dab555;
+    }
+    .btn-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 0.3em;
+    }
+    .widget-btn {
+      flex: 1;
+      font-size: 1em;
+      padding: 8px 0;
+      border-radius: 8px;
+      border: none;
+      background: var(--main);
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s;
+      margin: 0;
+    }
+    .widget-btn.secondary {
+      background: #e8f8ef;
+      color: var(--main-dark);
+    }
+    .widget-btn:active, .widget-btn:hover:not(.secondary) {
+      background: var(--main-dark);
+    }
+    .result-label {
+      font-size: 0.97em;
+      color: #7d8b91;
+      margin-bottom: 1px;
+      font-weight: 500;
+      text-align: right;
+    }
+    .copy-btn {
+      background: #b9f5d2;
+      color: #246948;
+      border-radius: 6px;
+      font-size: 0.97em;
+      padding: 5px 12px;
+      margin-top: 2px;
+      border: none;
+      cursor: pointer;
+      transition: background .14s;
+    }
+    .copy-btn:hover { background: #93e5b8; }
+    .credit {
+      font-size: 0.93em;
+      color: #a3bdb1;
+      margin-top: 9px;
+      text-align: center;
+      user-select: none;
+      pointer-events: none;
+    }
+    /* ----- Responsive ----- */
+    @media (max-width: 600px) {
+      #floating-widget {
+        right: 1vw; left: 1vw; top: 1vw;
+        width: 99vw; min-width: unset; max-width: 100vw;
+        padding: 10px 2vw 8px 2vw;
+      }
+      .widget-header { min-height: 28px; }
+      .heal-icon { width: 32px; height: 32px;}
+      .widget-title { font-size: 1em; }
+    }
+  </style>
+</head>
+<body>
+<div id="floating-widget">
+  <div class="widget-header" id="widget-drag-handle">
+    <span class="heal-icon" title="תיקון/ריפוי">
+      <!-- צלב רפואי ירוק -->
+      <svg viewBox="0 0 26 26"><g>
+        <rect x="11" y="4" width="4" height="18" rx="1" fill="#36d399"/>
+        <rect x="4" y="11" width="18" height="4" rx="1" fill="#36d399"/>
+      </g></svg>
+    </span>
+    <span class="widget-title">מתקן טעויות מקלדת</span>
+    <span class="header-btns">
+      <button class="icon-btn" id="minimize-btn" title="הקטן / פתח">
+        <!-- מינוס/Restore -->
+        <svg id="min-icon" viewBox="0 0 24 24"><rect x="6" y="11" width="12" height="2" rx="1" fill="#36d399"/></svg>
+        <svg id="restore-icon" viewBox="0 0 24 24" style="display:none"><rect x="6" y="7" width="12" height="2" rx="1" fill="#36d399"/><rect x="6" y="15" width="12" height="2" rx="1" fill="#36d399"/></svg>
+      </button>
+      <button class="icon-btn" id="close-btn" title="סגור">
+        <!-- X -->
+        <svg viewBox="0 0 24 24"><line x1="7" y1="7" x2="17" y2="17" stroke="#f66969" stroke-width="2.3" stroke-linecap="round"/><line x1="17" y1="7" x2="7" y2="17" stroke="#f66969" stroke-width="2.3" stroke-linecap="round"/></svg>
+      </button>
+    </span>
+  </div>
+  <div class="widget-content" id="widget-content">
+    <textarea id="input" placeholder="הקלד כאן באנגלית בטעות..."></textarea>
+    <div class="btn-group">
+      <button class="widget-btn" onclick="convert('en2he')">הפוך לעברית</button>
+      <button class="widget-btn secondary" onclick="convert('he2en')">הפוך לאנגלית</button>
+    </div>
+    <div>
+      <span class="result-label">תוצאה:</span>
+      <textarea id="output" readonly placeholder="כאן תראה את התוצאה..."></textarea>
+      <button class="copy-btn" onclick="copyResult()">העתק</button>
+    </div>
+    <div class="credit">💚 עיצוב, קוד וריפוי: Oren | ניתן לגרור, להקטין ולהסתיר</div>
+  </div>
+</div>
+<script>
+  // --------- Keyboard Map ---------
+  const en2he = {
+    'q':'/', 'w':'\'', 'e':'ק', 'r':'ר', 't':'א', 'y':'ט', 'u':'ו', 'i':'ן', 'o':'ם', 'p':'פ',
+    'a':'ש', 's':'ד', 'd':'ג', 'f':'כ', 'g':'ע', 'h':'י', 'j':'ח', 'k':'ל', 'l':'ך', ';':'ף', '\'':';',
+    'z':'ז', 'x':'ס', 'c':'ב', 'v':'ה', 'b':'נ', 'n':'מ', 'm':'צ', ',':'ת', '.':'ץ', '/':'.',
+    'Q':'/', 'W':'\'', 'E':'ק', 'R':'ר', 'T':'א', 'Y':'ט', 'U':'ו', 'I':'ן', 'O':'ם', 'P':'פ',
+    'A':'ש', 'S':'ד', 'D':'ג', 'F':'כ', 'G':'ע', 'H':'י', 'J':'ח', 'K':'ל', 'L':'ך', ':':'ף', '"':';',
+    'Z':'ז', 'X':'ס', 'C':'ב', 'V':'ה', 'B':'נ', 'N':'מ', 'M':'צ', '<':'ת', '>':'ץ', '?':'.'
+  };
+  const he2en = {};
+  for(const [en, he] of Object.entries(en2he)) {
+    if(!he2en[he]) he2en[he] = en.toLowerCase();
+  }
+  function convert(dir) {
+    const txt = document.getElementById('input').value;
+    let res = '';
+    for(let ch of txt) {
+      if(dir === 'en2he') res += en2he[ch] || en2he[ch.toLowerCase()] || ch;
+      else if(dir === 'he2en') res += he2en[ch] || ch;
+    }
+    document.getElementById('output').value = res;
+  }
+  function copyResult() {
+    const output = document.getElementById('output');
+    output.select();
+    document.execCommand('copy');
+  }
+  // קיצורים: Enter = הפוך, Ctrl+Enter = הפוך לאנגלית
+  document.getElementById('input').addEventListener('keydown', e=>{
+    if(e.key==="Enter" && !e.shiftKey && !e.ctrlKey) { convert('en2he'); e.preventDefault();}
+    if(e.key==="Enter" && e.ctrlKey) { convert('he2en'); e.preventDefault();}
+  });
+
+  // --------- Floating Widget Logic ---------
+  const widget = document.getElementById('floating-widget');
+  const dragHandle = document.getElementById('widget-drag-handle');
+  const minimizeBtn = document.getElementById('minimize-btn');
+  const closeBtn = document.getElementById('close-btn');
+  const content = document.getElementById('widget-content');
+  let minimized = false, offsetX=0, offsetY=0, dragging=false, startX=0, startY=0;
+  let widgetRect, pointerId=null;
+
+  // Drag Logic: Desktop + Touch
+  dragHandle.addEventListener('pointerdown', (e) => {
+    if(e.button !== undefined && e.button !== 0) return;
+    dragging = true;
+    widgetRect = widget.getBoundingClientRect();
+    pointerId = e.pointerId;
+    startX = e.clientX;
+    startY = e.clientY;
+    offsetX = startX - widgetRect.left;
+    offsetY = startY - widgetRect.top;
+    widget.setPointerCapture(pointerId);
+    widget.style.transition = "none";
+  });
+  dragHandle.addEventListener('pointermove', (e) => {
+    if(!dragging) return;
+    let x = e.clientX - offsetX;
+    let y = e.clientY - offsetY;
+    // אל תצא מהמסך!
+    x = Math.max(5, Math.min(window.innerWidth - widget.offsetWidth - 5, x));
+    y = Math.max(5, Math.min(window.innerHeight - widget.offsetHeight - 5, y));
+    widget.style.left = x + "px";
+    widget.style.top = y + "px";
+    widget.style.right = "unset"; // אחרי גרירה – מיישר לפי left
+    widget.style.bottom = "unset";
+    widget.style.position = "fixed";
+  });
+  dragHandle.addEventListener('pointerup', (e) => {
+    dragging = false;
+    widget.releasePointerCapture(pointerId);
+    widget.style.transition = "";
+  });
+
+  // Minimize/Restore
+  minimizeBtn.addEventListener('click', (e) => {
+    minimized = !minimized;
+    widget.classList.toggle('minimized', minimized);
+    content.classList.toggle('minimized', minimized);
+    document.getElementById('min-icon').style.display = minimized ? "none" : "";
+    document.getElementById('restore-icon').style.display = minimized ? "" : "none";
+    widget.style.cursor = minimized ? "pointer" : "grab";
+  });
+  widget.addEventListener('click', function(e){
+    if(minimized && e.target===widget) {
+      minimized = false;
+      widget.classList.remove('minimized');
+      content.classList.remove('minimized');
+      document.getElementById('min-icon').style.display = "";
+      document.getElementById('restore-icon').style.display = "none";
+      widget.style.cursor = "grab";
+    }
+  });
+
+  // Close
+  closeBtn.addEventListener('click', () => widget.style.display = "none");
+
+  // שים את הווידג'ט בצד ימין עליון כברירת מחדל
+  widget.style.top = "3vw";
+  widget.style.right = "3vw";
+  widget.style.left = "";
+  widget.style.bottom = "";
+
+  // תמיכה ב-drag אחרי שינויי רספונסיב
+  window.addEventListener('resize', ()=> {
+    if(parseInt(widget.style.left || 0) + widget.offsetWidth > window.innerWidth - 5) {
+      widget.style.left = (window.innerWidth-widget.offsetWidth-5) + "px";
+    }
+    if(parseInt(widget.style.top || 0) + widget.offsetHeight > window.innerHeight - 5) {
+      widget.style.top = (window.innerHeight-widget.offsetHeight-5) + "px";
+    }
+  });
+</script>
+</body>
+</html>

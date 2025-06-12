@@ -1,0 +1,317 @@
+<!-- index.html - גלריה תלת-ממדית סייבר עם HUD משודרג כולל שעון -->
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>גלריה תלת-ממדית סייבר דינמית</title>
+  <style>
+    /* בסיס ורספונסיביות */
+    html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#000; touch-action:none; }
+    canvas { display:block; width:100%; height:100%; }
+
+    /* HUD וגילוי/הסתרה */
+    #hudTab {
+      position:absolute; top:8px; right:8px;
+      width:32px; height:32px;
+      background:rgba(0,0,0,0.6); border:2px solid #0f0;
+      border-radius:4px 0 0 4px; z-index:101;
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer;
+    }
+    #hudTab .icon { color:#0f0; font-size:20px; text-shadow:0 0 5px #0f0; }
+
+    #hud {
+      position:absolute; top:8px; right:40px;
+      width:calc(100% - 56px); max-width:320px; max-height:90vh; overflow-y:auto;
+      background:rgba(0,0,0,0.6); border:2px solid #0f0; border-radius:8px;
+      padding:8px; box-sizing:border-box;
+      font-family:monospace; font-size:14px; color:#0f0; z-index:100;
+    }
+    #hud.hidden { display:none; }
+    #hud label { display:flex; align-items:center; margin:6px 0; }
+    #hud label .icon { margin-left:6px; color:#0f0; text-shadow:0 0 5px #0f0; }
+    #hud label span { flex:1; }
+    #hud input[type=range] {
+      -webkit-appearance:none; width:100%; height:8px; border-radius:4px;
+      background:linear-gradient(to right, #0f0 0%, #f00 100%);
+      outline:none; margin-top:4px;
+    }
+    #hud input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance:none; width:16px; height:16px; border-radius:50%; background:#0f0; cursor:pointer; border:2px solid #000;
+    }
+    #hud input[type=range]::-moz-range-thumb {
+      width:16px; height:16px; border-radius:50%; background:#0f0; cursor:pointer; border:2px solid #000;
+    }
+
+    /* שעון ותאריך */
+    #clock {
+      text-align:center; margin:8px 0;
+      font-family:monospace; font-size:16px; color:#ff0;
+      text-shadow:0 0 8px #ff0;
+    }
+
+    /* מודאל */
+    .modal { position:fixed; top:0; left:0; width:100%; height:100%; display:flex;
+      align-items:center; justify-content:center;
+      background:rgba(0,0,0,1); visibility:hidden; opacity:0; transition:opacity .4s; z-index:50;
+    }
+    .modal.visible { visibility:visible; opacity:1; }
+    .modal img {
+      max-width:90%; max-height:90%; border-radius:8px;
+      transform:scale(0.7); opacity:0;
+      transition:transform .4s ease, opacity .4s ease;
+      box-shadow:0 0 20px #0f0;
+    }
+    .modal.visible img { transform:scale(1); opacity:1; }
+
+    /* טקסטים סייבר */
+    .cyber-text { position:absolute; color:#0f0; font-family:'Courier New',monospace; font-size:16px;
+      pointer-events:none; animation:flicker var(--blinkSpeed,2s) infinite; opacity:0.6;
+    }
+    @keyframes flicker { 0%,100%{opacity:0.2;} 50%{opacity:0.8;} }
+  </style>
+</head>
+<body>
+  <!-- לחצן HUD עם אייקון סייבר -->
+  <div id="hudTab"><span class="icon">⚙</span></div>
+  <!-- HUD -->
+  <div id="hud">
+    <div id="clock"></div>
+    <label><span class="icon">📁</span><span>Files: <span id="fileCount">110</span></span><input id="fileInputHud" type="file" accept="image/*" multiple></label>
+    <label><span class="icon">🔄</span><span>מהירות סיבוב <span id="rotateVal">0.0006</span></span><input id="rotateSlider" type="range" min="0" max="0.02" step="0.0001" value="0.0006"></label>
+    <label><span class="icon">✨</span><span>מהירות כוכבים <span id="starVal">0.0034</span></span><input id="starSlider" type="range" min="0" max="0.01" step="0.0001" value="0.0034"></label>
+    <label><span class="icon">⚡</span><span>מהירות הבהוב <span id="blinkVal">0.02</span></span><input id="blinkSlider" type="range" min="0" max="0.05" step="0.001" value="0.02"></label>
+    <label><span class="icon">🔍</span><span>גודל גלובלי <span id="scaleVal">0.5</span></span><input id="scaleSlider" type="range" min="0.1" max="2" step="0.1" value="0.5"></label>
+    <label><span class="icon">📐</span><span>עובי מסגרות <span id="frameWidthVal">8</span></span><input id="frameWidthSlider" type="range" min="1" max="12" step="1" value="8"></label>
+    <label><span class="icon">☁️</span><span>שקיפות מסגרות <span id="frameOpacityVal">1</span></span><input id="frameOpacitySlider" type="range" min="0" max="1" step="0.1" value="1"></label>
+    <label><span class="icon">⭐</span><span>גודל כוכבים <span id="starSizeVal">4</span></span><input id="starSizeSlider" type="range" min="0.5" max="8" step="0.5" value="4"></label>
+    <label><span class="icon">🌌</span><span>מספר כוכבים <span id="starCountVal">2000</span></span><input id="starCountSlider" type="range" min="100" max="3000" step="100" value="2000"></label>
+    <label><span class="icon">🌠</span><span>שקיפות תמונות <span id="imgOpacityVal">1</span></span><input id="imgOpacitySlider" type="range" min="0" max="1" step="0.1" value="1"></label>
+  </div>
+
+  <!-- מודאל להצגת תמונה -->
+  <div id="modal" class="modal"><img id="modalImg" src=""></div>
+
+  <!-- ספריות Three.js -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/controls/OrbitControls.js"></script>
+  <script>
+    const maxImages=333;
+    let autoRotateSpeed=0.0006, starRotSpeed=0.0034, blinkSpeed=0.02;
+    let globalScale=0.5, frameWidth=8, frameOpacity=1;
+    let starSize=4, starCount=2000, imgOpacity=1;
+    let imageItems=[]; // This will be populated by URL params or default
+    
+    // Default images if no request data is found
+    const defaultImages = [];
+    for(let i=1;i<=110;i++) defaultImages.push({url:`https://picsum.photos/seed/${i}/400/300`,name:`Image${i}`});
+
+    const scene=new THREE.Scene();
+    const camera=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,0.1,2000); camera.position.z=350;
+    const renderer=new THREE.WebGLRenderer({antialias:true}); renderer.setSize(innerWidth,innerHeight); document.body.appendChild(renderer.domElement);
+    const controls=new THREE.OrbitControls(camera,renderer.domElement); controls.enableDamping=true; controls.autoRotate=false;
+    const raycaster=new THREE.Raycaster(), mouse=new THREE.Vector2();
+    const group=new THREE.Group(), frames=[]; let stars;
+
+    // --- Start: Added script to read URL parameters ---
+    const params = new URLSearchParams(window.location.search);
+    const requestId = params.get('reqId');
+    const currentTheme = params.get('theme');
+    const offlineMode = params.get('offline') === 'true';
+
+    if (requestId) {
+      console.log('Request ID (from template):', requestId);
+      // Here you would typically fetch or determine data based on requestId
+      // For demonstration, let's assume requestId could modify imageItems
+      // For example, if requestId was 'special-event', you might load different images.
+      // imageItems = loadImagesForRequest(requestId); 
+      // For now, we'll just log it and use default images if imageItems isn't populated.
+      document.title = `גלריה - בקשה ${requestId}`;
+    }
+
+    if (currentTheme) {
+      console.log('Theme (from template):', currentTheme);
+      document.body.classList.add(`theme-${currentTheme}`); // e.g. theme-dark or theme-light
+      // You might want to adjust HUD colors or other elements based on the theme
+      if (currentTheme === 'light') {
+        // Example: Adjust colors for light theme
+        // document.getElementById('hud').style.borderColor = '#333';
+        // document.getElementById('hud').style.color = '#333';
+      }
+    }
+
+    if (offlineMode) {
+        console.log('Template is in offline mode.');
+        // Potentially alter behavior if offline, e.g., use only local/default assets.
+    }
+
+    // Populate imageItems: Use request-specific data if available, otherwise defaults.
+    // This is a placeholder for actual data loading logic based on requestId.
+    // For now, if no specific logic changes imageItems based on requestId, it will use defaultImages.
+    if (imageItems.length === 0) {
+        imageItems = [...defaultImages];
+    }
+    // --- End: Added script to read URL parameters ---
+
+
+    // שעון דיגיטלי
+    function updateClock() {
+      const now=new Date();
+      const date=now.toLocaleDateString('he-IL',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+      const time=now.toLocaleTimeString('he-IL');
+      document.getElementById('clock').textContent = `${date} ${time}`;
+    }
+    setInterval(updateClock,1000); updateClock();
+
+    buildScene(); setupHUD(); animate();
+
+    function buildScene(){
+      group.clear(); frames.length=0; if(stars) scene.remove(stars);
+      const geom=new THREE.BufferGeometry(), pos=new Float32Array(starCount*3);
+      for(let i=0;i<starCount;i++){pos[i*3]=(Math.random()-0.5)*2000;pos[i*3+1]=(Math.random()-0.5)*2000;pos[i*3+2]=(Math.random()-0.5)*2000;}
+      geom.setAttribute('position',new THREE.BufferAttribute(pos,3));
+      stars=new THREE.Points(geom,new THREE.PointsMaterial({color:0xffffff,size:starSize,transparent:true,opacity:1})); scene.add(stars);
+      
+      if (imageItems.length === 0) {
+        console.warn("No images to display in the globe.");
+        return; // Don't build if no images
+      }
+
+      const baseSize=60; // Removed factor, as imageItems count is now dynamic
+      const w=baseSize*globalScale, h=w*0.75;
+      const radius=200, phiStep=Math.PI*(3-Math.sqrt(5)); // Golden Angle
+
+      imageItems.forEach((item,i)=>{
+        const y=1-(i/(imageItems.length-1))*2; // Distribute images along y-axis
+        const rY=Math.sqrt(1-y*y); // Radius at this y-level
+        const theta=phiStep*i; // Angle for this image
+
+        const x=Math.cos(theta)*radius*rY;
+        const z=Math.sin(theta)*radius*rY;
+        
+        const geo=new THREE.PlaneGeometry(w,h);
+        // Use a try-catch for texture loading as URLs might be invalid
+        let texture;
+        try {
+            texture = new THREE.TextureLoader().load(item.url, 
+                () => {}, // onLoad
+                undefined, // onProgress
+                (err) => { console.error(`Error loading texture for ${item.url}:`, err); } // onError
+            );
+        } catch (e) {
+            console.error(`Failed to initiate texture loading for ${item.url}:`, e);
+            // Optionally use a placeholder texture
+            // texture = new THREE.TextureLoader().load('placeholder.png');
+        }
+
+        const mat=new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide,transparent:true,opacity:imgOpacity});
+        const mesh=new THREE.Mesh(geo,mat); mesh.position.set(x,y*radius,z); mesh.lookAt(0,0,0); mesh.userData={url:item.url}; group.add(mesh);
+        
+        const edge=new THREE.EdgesGeometry(geo);
+        const eMat=new THREE.LineBasicMaterial({color:0x0f0,linewidth:frameWidth,transparent:true,opacity:frameOpacity});
+        const frame=new THREE.LineSegments(edge,eMat); frame.position.copy(mesh.position); frame.rotation.copy(mesh.rotation); group.add(frame); frames.push(frame);
+        
+        // Text Label (Sprite)
+        const cvs=document.createElement('canvas');
+        const contextScale = 2; // Render canvas at higher resolution for sharper text
+        cvs.width=256 * contextScale; 
+        cvs.height=64 * contextScale;
+        const ctx=cvs.getContext('2d'); 
+        ctx.scale(contextScale, contextScale); // Scale down drawing operations
+        ctx.font='24px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillStyle='#f00'; ctx.shadowColor='#f00'; ctx.shadowBlur=10; 
+        ctx.fillText(item.name || 'Untitled',128,32); // Use item.name or a default
+        
+        const txt=new THREE.CanvasTexture(cvs);
+        const sprMat=new THREE.SpriteMaterial({map:txt,transparent:true, depthTest: false}); // depthTest false to ensure visibility
+        const spr=new THREE.Sprite(sprMat); 
+        spr.scale.set(w,h*0.25,1); 
+        // Position sprite below the image, adjust yOffset as needed
+        const yOffset = h/2 + 10; // 10 units below the image
+        spr.position.set(x,y*radius - yOffset,z); 
+        spr.renderOrder = 1; // Render sprites on top of images if overlapping
+        group.add(spr);
+      }); 
+      scene.add(group); 
+      createCyberTexts();
+      document.getElementById('fileCount').textContent=imageItems.length; // Update HUD
+    }
+
+    document.getElementById('hudTab').addEventListener('click',()=>{document.getElementById('hud').classList.toggle('hidden');});
+
+    function createCyberTexts(){
+      document.querySelectorAll('.cyber-text').forEach(e=>e.remove());
+      const samples=['01010101','H4CK3R','CY8ER','▓▓▓▓','ᚠᛟᛋ','BO0T','C0D3','SYS','███','NE0N'];
+      samples.forEach((s,i)=>{const el=document.createElement('div');el.className='cyber-text';el.textContent=s;el.style.top=Math.random()*90+'%';el.style.left=Math.random()*90+'%';document.body.appendChild(el);});
+      const fix=document.createElement('div');fix.className='cyber-text';fix.textContent='orengamchi.com';fix.style.color='#ff0';fix.style.top='5%';fix.style.left='5%';fix.style.animation='none';document.body.appendChild(fix);
+    }
+
+    function setupHUD(){
+      document.getElementById('fileCount').textContent=imageItems.length;
+      document.getElementById('fileInputHud').addEventListener('change',e=>{
+        const files=Array.from(e.target.files).slice(0,maxImages - imageItems.length); // Prevent exceeding maxImages
+        if (files.length === 0) return;
+
+        let loadedCount=0;
+        const newImages = [];
+        files.forEach(f=>{
+            const r=new FileReader();
+            r.onload=ev=>{
+                newImages.push({url:ev.target.result,name:f.name});
+                loadedCount++;
+                if(loadedCount===files.length){
+                    imageItems = [...imageItems, ...newImages].slice(0, maxImages); // Add new and trim if over max
+                    document.getElementById('fileCount').textContent=imageItems.length;
+                    buildScene();
+                }
+            };
+            r.onerror = (err) => { // Handle file reading errors
+                console.error("Error reading file:", f.name, err);
+                loadedCount++; // Still increment to not hang the process
+                 if(loadedCount===files.length){ // Check if all attempted files are processed
+                    imageItems = [...imageItems, ...newImages].slice(0, maxImages);
+                    document.getElementById('fileCount').textContent=imageItems.length;
+                    buildScene();
+                }
+            };
+            r.readAsDataURL(f);
+        });
+      });
+      const map={ rotateSlider:v=>autoRotateSpeed=v, starSlider:v=>starRotSpeed=v,
+        blinkSlider:v=>blinkSpeed=v, scaleSlider:v=>{globalScale=v;buildScene();}, frameWidthSlider:v=>{frameWidth=v;buildScene();},
+        frameOpacitySlider:v=>frameOpacity=v, starSizeSlider:v=>{starSize=v;if(stars)stars.material.size=v;}, starCountSlider:v=>{starCount=v;buildScene();}, imgOpacitySlider:v=>{imgOpacity=v;buildScene();}
+      };
+      Object.entries(map).forEach(([id,fn])=>{const inp=document.getElementById(id),val=document.getElementById(id.replace('Slider','Val'));inp.addEventListener('input',e=>{const v=parseFloat(e.target.value);fn(v);val.textContent=v;});val.textContent=inp.value;});
+    }
+
+    function animate(){requestAnimationFrame(animate);group.rotation.y+=autoRotateSpeed;if(stars)stars.rotation.y+=starRotSpeed;frames.forEach((f,i)=>f.material.opacity=frameOpacity+0.3*Math.sin(Date.now()*blinkSpeed+i));controls.update();renderer.render(scene,camera);}    
+    
+    let lastClickTime = 0;
+    const DOUBLE_CLICK_THRESHOLD = 300; // ms
+
+    window.addEventListener('click', e => {
+        const currentTime = new Date().getTime();
+        if (currentTime - lastClickTime < DOUBLE_CLICK_THRESHOLD) {
+            // This is a double click
+            e.preventDefault();
+            const m=document.getElementById('modal');
+            if(m.classList.contains('visible')){
+                m.classList.remove('visible');
+            } else {
+                mouse.set((e.clientX/innerWidth)*2-1,-(e.clientY/innerHeight)*2+1);
+                raycaster.setFromCamera(mouse,camera);
+                const hit=raycaster.intersectObjects(group.children.filter(o=> o.isMesh && o.userData && o.userData.url)); // Intersect only meshes with userData.url
+                if(hit.length){
+                    document.getElementById('modalImg').src=hit[0].object.userData.url;
+                    m.classList.add('visible');
+                }
+            }
+        }
+        lastClickTime = currentTime;
+    });
+
+    window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+  </script>
+</body>
+</html>

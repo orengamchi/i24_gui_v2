@@ -1,0 +1,2162 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TIMLOL_I24</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;700;900&family=Rubik:wght@400;700&family=Assistant:wght@400;700&family=Arimo:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* General styling for the application body and layout */
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden; 
+            font-family: 'Heebo', sans-serif;
+            background-color: #1a1a2e; 
+            direction: rtl;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+        }
+
+        /* Top controls bar for main actions */
+        .top-controls-bar {
+            position: fixed; 
+            top:0; left:0; right:0;
+            background-color: rgba(40, 40, 65, 0.97); 
+            padding: 10px 15px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+            z-index: 1000; 
+            display: flex; 
+            align-items: center;
+            justify-content: space-between; 
+            flex-wrap: wrap;
+            gap: 10px; 
+            color: #e0e0e0; 
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+            transform: translateY(0);
+        }
+        .top-controls-bar.hidden-bar {
+            opacity: 0;
+            transform: translateY(-100%);
+            pointer-events: none;
+        }
+        .top-controls-bar h4 {
+            color: #e0e0e0;
+            margin: 0; 
+            font-size: 14px; 
+            white-space: nowrap;
+        }
+
+        .icons-panel-inline { display: flex; align-items: center; gap: 6px; }
+        .icon-button {
+            background: none; 
+            border: 1px solid transparent; 
+            color: #e0e0e0; 
+            cursor: pointer; padding: 8px;
+            border-radius: 6px; transition: background-color 0.3s ease, border-color 0.3s ease;
+            display: flex; align-items: center; justify-content: center;
+            width: 38px; height: 38px; 
+            position: relative; 
+        }
+        .icon-button:hover { background-color: rgba(255,255,255,0.1); }
+        .icon-button.active { 
+            background-color: rgba(100, 220, 150, 0.2); 
+            border-color: #64dc96;
+            color: #64dc96;
+        }
+        .icon-button:disabled {
+            color: #6b7280;
+            cursor: not-allowed;
+        }
+        .icon-button svg {
+            width: 20px; height: 20px; fill: currentColor;
+        }
+        
+        /* Slider container in the top bar */
+        .top-bar-slider-container {
+            display: none; 
+            align-items: center;
+            gap: 8px;
+            margin-left: 10px; 
+            padding: 5px 10px;
+            background-color: rgba(60,60,90,0.8); 
+            border-radius: 6px;
+        }
+        .top-bar-slider-container.visible-slider { 
+            display: flex;
+        }
+        .top-bar-slider-container label {
+            font-size: 13px;
+            color: #ccc; 
+            white-space: nowrap;
+        }
+        .top-bar-slider-container input[type="range"] {
+            width: 100px; 
+            height: 15px;
+        }
+        .top-bar-slider-container #maskOffsetValueDisplayTop {
+            font-size: 13px;
+            color: #bbb; 
+            min-width: 30px; 
+        }
+        
+        /* General styling for all draggable popup controls */
+        .mini-popup-controls { 
+            position: fixed; 
+            background-color: rgba(50, 50, 75, 0.75);
+            border: 1px solid rgba(100, 100, 125, 0.85); 
+            backdrop-filter: blur(10px); 
+            -webkit-backdrop-filter: blur(10px); 
+            border-radius: 8px;
+            padding: 15px; box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+            z-index: 1001; min-width: 220px; 
+            display: none; 
+            color: #e0e0e0; 
+        }
+        .mini-popup-controls.dragging {
+            cursor: grabbing;
+        }
+        .mini-popup-controls.visible { display: block; }
+        
+        /* Drag handle for popups */
+        .drag-handle {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            width: 22px;
+            height: 22px;
+            cursor: grab;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .drag-handle:active {
+            cursor: grabbing;
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        .mini-popup-controls h4 {
+             cursor: grab;
+        }
+        
+        #popupTitleBannerSettings, #popupDisplayMediaSettings { 
+            width: 800px;
+            max-width: 90%;
+        }
+        #popupGradientGenerator { 
+            min-width: 380px; 
+        }
+        #popupNarrationSettings {
+            width: 90%;
+            max-width: 700px;
+            min-width: 320px;
+        }
+        #popupNarrationSettings .narration-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        #popupNarrationSettings .popup-section-title-control > * {
+             margin-bottom: 8px;
+        }
+        #popupNarrationSettings h4 {
+            padding-left: 30px;
+        }
+        #popupNarrationSettings .control-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        #popupNarrationSettings .control-row label {
+            flex-shrink: 0;
+            margin-bottom: 0;
+        }
+        #popupNarrationSettings .control-row input[type="color"] {
+            width: 40px;
+            height: 30px;
+            padding: 2px;
+            min-width: 40px;
+        }
+        
+        .title-settings-grid, .layout-settings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .layout-settings-grid {
+             border-top: 1px solid #555;
+            padding-top: 15px;
+            margin-top: 15px;
+        }
+
+        #popupTitleBannerSettings .popup-section-title-control,
+        #popupGradientGenerator .popup-section-title-control,
+        #popupNarrationSettings .popup-section-title-control,
+        #popupDisplayMediaSettings .popup-section {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #555;
+        }
+        #popupTitleBannerSettings .popup-section-title-control:last-child,
+        #popupGradientGenerator .popup-section-title-control:last-child,
+        #popupNarrationSettings .popup-section-title-control:last-child,
+        .title-settings-grid .popup-section-title-control,
+        .layout-settings-grid .popup-section {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        #popupTitleBannerSettings h5, #popupGradientGenerator h5, #popupNarrationSettings h5, #popupDisplayMediaSettings h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #b0c4de; 
+            font-size: 14px;
+        }
+        #popupDisplayMediaSettings > h4 {
+             color: #e0e0e0;
+             border-bottom: 1px solid #555;
+             padding-bottom: 10px;
+        }
+        #popupTitleBannerSettings .banner-color-palette-popup {
+             display:flex; gap:5px; margin-top:8px; margin-bottom: 12px; justify-content: flex-start;
+        }
+        #popupTitleBannerSettings textarea, #popupNarrationSettings textarea { 
+            width: 100%;
+            box-sizing: border-box;
+            min-height: 120px; 
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #777;
+            background-color: #333;
+            color: #e0e0e0;
+            font-size: 14px;
+            resize: vertical; 
+        }
+         #popupGradientGenerator .color-picker-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        #popupGradientGenerator .color-picker-row > div {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #popupGradientGenerator .color-picker-row input[type="color"]{
+            width: 80px; 
+            height: 35px;
+            padding: 2px;
+            margin-top: 5px;
+        }
+
+        .angle-slider-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .angle-slider-container {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background-color: #444;
+            position: relative;
+            cursor: pointer;
+            margin: 10px auto;
+            touch-action: none; 
+        }
+        .angle-slider-handle {
+            width: 16px;
+            height: 16px;
+            background-color: #007bff;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%); 
+            cursor: grab;
+        }
+        .angle-slider-value {
+            margin-top: 5px;
+            font-size: 13px;
+        }
+
+        .slider-container-popup, .slider-container { 
+            margin-bottom: 10px;
+        }
+        .slider-container-popup label, .slider-container label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 13px;
+            color: #ccc;
+        }
+        .slider-container-popup input[type="range"], .slider-container input[type="range"] {
+            width: calc(100% - 70px); 
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .slider-container-popup span, .slider-container span {
+            display: inline-block;
+            width: 50px; 
+            text-align: right;
+            font-size: 13px;
+            color: #bbb;
+            vertical-align: middle;
+            margin-right: 10px;
+        }
+
+        .mini-popup-controls label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; color: #ccc; }
+        .mini-popup-controls input[type="text"],
+        .mini-popup-controls input[type="file"],
+        .mini-popup-controls textarea, 
+        .mini-popup-controls select,
+        .mini-popup-controls input[type="range"],
+        .mini-popup-controls input[type="color"] { 
+            width: 100%; 
+            padding: 8px; 
+            border: 1px solid #777; 
+            background-color: #333; 
+            color: #e0e0e0; 
+            border-radius: 4px; margin-bottom: 10px; font-size: 14px;
+            box-sizing: border-box; 
+        }
+         .mini-popup-controls input[type="color"] {
+            height: 40px; 
+            padding: 4px; 
+        }
+        .mini-popup-controls input[type="checkbox"] { margin-right: 5px; vertical-align: middle; }
+        .mini-popup-controls button {
+            padding: 6px 12px; background-color: #007bff; color:white; border:none; border-radius:4px; cursor:pointer; margin-top:10px; font-size: 13px;
+        }
+        .mini-popup-controls button.cancel { background-color: #6c757d; margin-left: 5px;}
+        .mini-popup-controls button.danger { background-color: #dc3545; } 
+
+        #popupDisplayMediaSettings {
+            position: fixed; 
+            top: 75px; 
+            left: 50%;
+            transform: translateX(-50%);
+            max-height: 85vh; 
+            overflow-y: auto; 
+        }
+        #popupGradientGenerator {
+            left: 20px;
+            top: 75px;
+            transform: none;
+        }
+        #popupTitleBannerSettings {
+            right: 20px;
+            left: auto;
+            top: 75px;
+            transform: none;
+        }
+
+        .graphic-view-area {
+            flex-grow: 1; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            box-sizing: border-box;
+            overflow: hidden; 
+            margin-top: 0 !important;
+        }
+        .tv-graphic-container {
+            width: 100%; 
+            height: 100%;
+            position: relative; 
+            overflow: hidden;
+            background-color: #000; 
+            max-width: none; 
+            max-height: none; 
+            aspect-ratio: unset;
+            box-shadow: none;
+        }
+        
+        .graphic-content-wrapper { 
+            display: flex; width: 100%; height: 100%; direction: rtl;
+            position: relative; overflow: hidden; 
+        }
+        .graphic-content-wrapper.animated-gradient {
+            background-size: 400% 400% !important;
+            animation: animatedGradient var(--gradient-animation-speed, 15s) ease infinite;
+        }
+         .glow-effect-shared { 
+            position: absolute; top: 50%; left: 50%; width: 10px; height: 250%;
+            background: white; opacity: 0;
+            box-shadow: 0 0 25px 10px rgba(200, 220, 255, 0.6); 
+            transform-origin: center center; animation: diagonalShineShared 8s ease-in-out infinite; 
+            z-index: 0; 
+        }
+        @keyframes diagonalShineShared {
+            0% { transform: translate(-50%, -50%) rotate(45deg) translateY(-125%); opacity: 0.05; }
+            50% { transform: translate(-50%, -50%) rotate(45deg) translateY(0%); opacity: 0.15; }
+            100% { transform: translate(-50%, -50%) rotate(45deg) translateY(125%); opacity: 0.05; }
+        }
+        @keyframes animatedGradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .full-screen-bg-image-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-size: cover; 
+            z-index: 0; opacity: 1; 
+        }
+
+        .image-panel {
+            flex-basis: 33.33%;
+            background-color: transparent;
+            background-size: var(--image-panel-bg-size, cover); 
+            background-position: var(--image-panel-bg-pos-x, 50%) var(--image-panel-bg-pos-y, 50%);
+            background-repeat: no-repeat;
+            position: relative; display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; 
+            cursor: pointer; z-index: 2; 
+        }
+        .image-panel.hidden { display: none; }
+        .image-panel:hover .edit-icon-overlay { opacity: 1; }
+        .image-panel.dragover { background-color: rgba(42, 42, 42, 0.5); border: 3px dashed #007bff; }
+        .image-panel video { width: 100%; height: 100%; object-fit: var(--image-panel-bg-size, cover); }
+        
+        .disclaimer-container {
+            position: absolute; bottom: 10px; left: 10px; 
+            width: calc(100% - 20px); text-align: left; z-index: 5; 
+        }
+        .disclaimer-text {
+            font-size: 1.2vw; color: rgba(255, 255, 255, 0.8); 
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+            padding: 5px; display: inline-block; position: relative; 
+        }
+        .disclaimer-text:hover .edit-icon { opacity: 1; }
+
+        .content-panel {
+            flex-basis: 66.67%;
+            position: relative;
+            padding: 3vw 4vw; box-sizing: border-box;
+            color: white; overflow: hidden; 
+            background-color: transparent; z-index: 2; 
+        }
+        .content-panel.full-width { flex-basis: 100%; }
+        
+        .titles-container {
+            position: absolute;
+            top: 10%; 
+            right: 4vw;
+            width: calc(100% - 8vw);
+            z-index: 2;
+        }
+
+        .narration-box {
+            margin-top: 50px;
+        }
+
+        .text-line-bg-wrapper { 
+            position: relative; 
+            display:inline-block; 
+        }
+        .main-title .text-line-bg-wrapper { 
+             position: relative; 
+             display: block; 
+        }
+         .sub-title .text-line-bg-wrapper { 
+             position: relative; 
+        }
+        .main-title .text-line-bg-wrapper:hover .edit-icon,
+        .sub-title .text-line-bg-wrapper:hover .edit-icon,
+        .disclaimer-text:hover .edit-icon { opacity: 1; }
+
+        /* Edit icons appearing on hover */
+        .edit-icon, .edit-icon-overlay {
+            position: absolute; top: 0px; left: -25px; 
+            background-color: rgba(0,0,0,0.6); color: white;
+            border-radius: 50%; width: 20px; height: 20px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; opacity: 0; transition: opacity 0.3s ease;
+            z-index: 10;
+        }
+        .disclaimer-text .edit-icon { 
+            top: 50%; left: -25px; transform: translateY(-50%);
+        }
+        .edit-icon-overlay { 
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 40px; height: 40px; font-size:20px;
+        }
+        .edit-icon svg, .edit-icon-overlay svg { width: 12px; height: 12px; fill: white;}
+        .edit-icon-overlay svg { width: 20px; height: 20px;}
+        
+        .color-swatch { width: 25px; height: 25px; border-radius: 4px; cursor: pointer; border: 1px solid #ccc; box-shadow: 0 0 3px rgba(0,0,0,0.1); transition: transform 0.2s;}
+        .color-swatch:hover {transform: scale(1.1);}
+
+        /* Text styling */
+        .text-line-bg {
+            padding: var(--title-banner-padding, 0.06em) 0.35em;
+            margin: 0.05em 0;
+            display: inline; 
+            box-decoration-break: clone; -webkit-box-decoration-break: clone;
+        }
+        .main-title, .sub-title, .disclaimer-text { 
+            opacity: 1; 
+        }
+
+        .main-title {
+            font-weight: 900; 
+            font-size: 72px; 
+            line-height: var(--main-title-line-height, 1.2); 
+            margin-bottom: 10px; 
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            position: relative; 
+        }
+        .sub-title {
+            font-weight: 700; 
+            font-size: 45px;
+            line-height: var(--sub-title-line-height, 1.2); 
+            margin-bottom: 0; 
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+            position: relative; 
+        }
+        .disclaimer-text {
+            font-size: 1.2rem;
+        }
+
+        /* Narration Box styling */
+        .narration-text {
+            font-size: 2.5rem;
+            min-height: 1.5em; 
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            font-family: var(--narration-font, 'Heebo');
+            font-weight: var(--narration-font-weight, 400);
+            color: var(--narration-text-color, #ffffff);
+            line-height: var(--narration-line-height, 1.4);
+        }
+        .narration-text .narration-line {
+            display: block;
+        }
+        .narration-text .line-banner {
+            background-color: var(--narration-banner-color, rgba(0, 170, 255, 1));
+            box-decoration-break: clone;
+            -webkit-box-decoration-break: clone;
+            padding: var(--narration-banner-vertical-padding, 0.1em) 0.2em;
+        }
+        .bullet-controls {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+        
+        #transcription-status {
+            font-size: 12px;
+            margin-top: 8px;
+            text-align: center;
+            height: 16px;
+        }
+        .status-loading { color: #87CEEB; }
+        .status-error { color: #FF6347; }
+        .status-success { color: #90EE90; }
+        .hidden { display: none; }
+
+        /* Inline editor popup for direct text editing */
+        #inlineEditor {
+            display:none; 
+            position:fixed; 
+            z-index:1002; 
+            background: rgba(50, 50, 75, 0.9); 
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border:1px solid rgba(100, 100, 125, 0.85); 
+            padding:20px; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3); border-radius: 8px;
+            width: 380px; 
+            max-height: 90vh;
+            overflow-y: auto;
+            color: #e0e0e0;
+        }
+        #inlineEditor textarea { width: calc(100% - 18px); margin-bottom:10px; padding:8px; border-radius:4px; border:1px solid #777; background-color: #333; color: #e0e0e0; min-height: 60px;}
+        #inlineEditor label { font-size: 14px; margin-bottom: 8px; display: block; color: #ccc; font-weight:600;}
+        #inlineEditor select, #inlineEditor input[type="text"], #inlineEditor input[type="range"], #inlineEditor input[type="color"] { 
+            width: calc(100% - 18px); margin-bottom:10px; padding:8px; border-radius:4px; border:1px solid #777; background-color: #333; color: #e0e0e0;
+            box-sizing: border-box;
+        }
+         #inlineEditor input[type="color"] {
+            height: 35px; padding: 2px;
+        }
+        #inlineEditor input[type="checkbox"] { margin-left: 5px; vertical-align: middle; }
+        #inlineEditor button { font-size: 14px; padding: 8px 15px; }
+        #inlineEditor .banner-color-palette-inline-editor { display:flex; gap:5px; margin-top:8px; margin-bottom: 12px; justify-content: flex-start;}
+        #inlineEditor .control-group-editor { margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #555;}
+        #inlineEditor .control-group-editor:last-child { border-bottom: none; }
+        #inlineEditor .banner-options { margin-top: 5px; } 
+
+        .playback-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        /* Animation classes */
+        .anim-fade-in { opacity:0; animation: fadeIn 1s ease-out forwards; }
+        .anim-slide-in-right { opacity:0; animation: slideInRight 0.8s ease-out forwards; }
+        .anim-slide-in-left { opacity:0; animation: slideInLeft 0.8s ease-out forwards; }
+        .anim-wave-in { opacity:0; animation: waveIn 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideInRight { from { opacity: 0; transform: translateX(-50px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes slideInLeft { from { opacity: 0; transform: translateX(50px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes waveIn {
+            from { opacity: 0; transform: translateY(30px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* Responsive design adjustments */
+        @media (max-width: 1200px) {
+            .top-controls-bar { flex-direction: column; align-items: flex-start; }
+            #popupTitleBannerSettings, #popupDisplayMediaSettings {
+                min-width: 380px;
+                width: 90%;
+            }
+            .title-settings-grid, .layout-settings-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        @media (max-width: 768px) {
+            .edit-icon { left: -22px; width:18px; height:18px;}
+            .edit-icon svg {width:10px; height:10px;}
+            #inlineEditor { width: calc(100% - 40px); }
+            #popupDisplayMediaSettings, #popupTitleBannerSettings { width: calc(100% - 30px); }
+            #popupNarrationSettings .narration-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="top-controls-bar hidden-bar" id="topControlsBar">
+            <div class="icons-panel-inline"> 
+                <h4>רקע:</h4> 
+                <button class="icon-button" id="iconCtrlGradientGenerator" title="מחולל גרדיאנט רקע">
+                    <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12C20,13.42 19.53,14.75 18.75,15.87L15.87,18.75C14.75,19.53 13.42,20 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12C6,13.05 6.3,14.03 6.81,14.87L14.87,6.81C14.03,6.3 13.05,6 12,6M12,18A6,6 0 0,0 18,12C18,10.95 17.7,9.97 17.19,9.13L9.13,17.19C9.97,17.7 10.95,18 12,18Z" /></svg>
+                </button>
+            </div>
+            <div class="icons-panel-inline">
+                <button class="icon-button" id="iconCtrlDisplayMedia" title="הגדרות תצוגה ומדיה"> 
+                    <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93s3.05-7.44 7-7.93v15.86zm2-15.86c1.03.13 2 .45 2.87.93L15.87 7H14V4.07zm0 4.06H15.87L13.13 11H14V8.13zm0 4.07H15.87L13.13 15H14v-2.8zm0 4.06H15.87L13.13 19H14v-2.8zM18.87 5.13C18 4.45 17.03 4.13 16 4.07V7h2.87L18.87 5.13zM16 8.13V11h2.87L16 8.13zm0 4.07V15h2.87L16 12.2zm2.87 5.74c-.87.48-1.84.8-2.87.93V17h2.87l0 .01.01-.01z"/></svg>
+                </button>
+                <button class="icon-button" id="iconCtrlTitleBannerSettings" title="הגדרות כותרות ובאנרים">
+                     <svg viewBox="0 0 24 24"><path d="M5 4v3h5.5v12h3V7H19V4H5z"/></svg> 
+                </button>
+                <button class="icon-button" id="iconCtrlNarrationSettings" title="הגדרות קריינות">
+                    <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z" /></svg>
+                </button>
+                <div class="top-bar-slider-container" id="topBarMaskSliderContainer">
+                    <label for="inputMaskOffsetTopBar">מסכה:</label>
+                    <input type="range" id="inputMaskOffsetTopBar" min="0" max="15" value="5" step="0.1">
+                    <span id="maskOffsetValueDisplayTop">5vw</span>
+                </div>
+                <button class="icon-button" id="iconCtrlAnimation" title="אנימציות">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4l1.41 1.41L7.83 11H20v2H7.83l5.58 5.59L12 20l-8-8 8-8z"/></svg>
+                </button>
+                 <button class="icon-button active" id="editModeButton" title="Edit Mode">
+                    <svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                </button>
+                 <button class="icon-button" id="previewModeButton" title="Preview Mode">
+                    <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12,9A3,3 0 0,1 15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z" /></svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="graphic-view-area full-view-active" id="graphicViewArea">
+            <div class="tv-graphic-container">
+                <div class="graphic-content-wrapper" id="graphicWrapperDisplay">
+                    <div class="full-screen-bg-image-container" id="fullScreenBgContainer"></div>
+                    <div class="glow-effect-shared"></div>
+                    <div class="content-panel" id="contentPanelDisplay">
+                        <div class="titles-container">
+                            <h1 class="main-title" id="mainTitleDisplay">
+                                <span class="text-line-bg-wrapper" data-text-type="mainTitle" data-banner-color-name="yellow"></span>
+                                <span class="edit-icon" id="mainTitleEditIcon">
+                                    <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                                </span>
+                            </h1>
+                            <h2 class="sub-title" id="subTitleDisplay">
+                                <span class="text-line-bg-wrapper" data-text-type="subTitle" data-banner-color-name="yellow"></span>
+                                <span class="edit-icon" id="subTitleEditIcon">
+                                    <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                                </span>
+                            </h2>
+                             <div class="narration-box" id="narrationBox">
+                                <span id="narrationText" class="narration-text"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="image-panel" id="imagePanelDisplay">
+                        <!-- Content generated by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Popups for Settings -->
+        <div class="mini-popup-controls" id="popupNarrationSettings">
+            <div class="drag-handle" title="גרור חלונית"></div>
+            <h4>הגדרות קריינות</h4>
+            <div class="narration-grid">
+                <div class="popup-section-title-control">
+                    <h5>סקריפט ותמלול</h5>
+                    <label for="narrationScript">טקסט הקריינות (הוסף '+' ל-bullet):</label>
+                    <textarea id="narrationScript"></textarea>
+                    <label for="narrationAudioFile" style="margin-top: 10px;">העלה קובץ שמע (wav):</label>
+                    <input type="file" id="narrationAudioFile" accept=".wav">
+                    <div style="margin-top: 10px;">
+                        <label for="transcriptionLanguageSelect">שפת תמלול:</label>
+                        <select id="transcriptionLanguageSelect">
+                            <option value="he-IL" data-lang-name="עברית" selected>עברית</option>
+                            <option value="en-US" data-lang-name="אנגלית">אנגלית</option>
+                        </select>
+                    </div>
+                    <button id="transcribeAudioButton" style="width: 100%; margin-top: 10px; background-color: #2563eb;">תמלל מתוך קובץ</button>
+                    <div id="transcription-status"></div>
+                </div>
+                <div class="popup-section-title-control">
+                    <h5>עיצוב והפעלה</h5>
+                    <div class="control-row">
+                        <label for="narrationFontSelect">פונט:</label>
+                        <select id="narrationFontSelect" style="flex-grow: 1;">
+                            <option value="'Heebo', sans-serif">Heebo</option>
+                            <option value="'Rubik', sans-serif">Rubik</option>
+                            <option value="'Assistant', sans-serif">Assistant</option>
+                            <option value="'Arimo', sans-serif">Arimo</option>
+                        </select>
+                        <select id="narrationFontWeightSelect">
+                            <option value="400">רגיל</option>
+                            <option value="700">עבה</option>
+                        </select>
+                         <input type="color" id="narrationTextColor" value="#ffffff" title="צבע פונט">
+                    </div>
+                    <div class="slider-container-popup">
+                        <label for="narrationLineHeightSlider">ריווח שורות:</label>
+                        <input type="range" id="narrationLineHeightSlider" min="1" max="3" value="1.4" step="0.1">
+                        <span id="narrationLineHeightValue">1.4</span>
+                    </div>
+                    <label>סגנון נקודות (Bullets):</label>
+                    <div class="bullet-controls" id="narrationBulletStyle">
+                        <button class="icon-button" data-style="none" title="ללא"><svg viewBox="0 0 24 24"><path d="M19,13H5V11H19V13Z" /></svg></button>
+                        <button class="icon-button" data-style="dash" title="קו">-</button>
+                        <button class="icon-button" data-style="star" title="כוכב">*</button>
+                        <button class="icon-button" data-style="circle" title="עיגול">●</button>
+                    </div>
+                    <label><input type="checkbox" id="chkNarrationBanner"> הצג באנר רקע</label>
+                    <div id="narrationBannerOptions">
+                        <div class="slider-container-popup">
+                            <label for="narrationBannerOpacitySlider">שקיפות באנר:</label>
+                            <input type="range" id="narrationBannerOpacitySlider" min="0" max="1" value="1" step="0.05">
+                            <span id="narrationBannerOpacityValue">100%</span>
+                        </div>
+                        <div class="slider-container-popup">
+                            <label for="narrationBannerHeightSlider">עובי באנר (px):</label>
+                            <input type="range" id="narrationBannerHeightSlider" min="1" max="15" value="4" step="1">
+                            <span id="narrationBannerHeightValue">4px</span>
+                        </div>
+                        <div class="slider-container-popup">
+                            <label for="narrationBannerColor">צבע באנר:</label>
+                            <input type="color" id="narrationBannerColor" value="#00aaff" style="width: 100%; height: 35px;">
+                        </div>
+                    </div>
+                    <div class="playback-controls">
+                        <button id="playNarrationButton" class="icon-button" title="הפעל">
+                            <svg viewBox="0 0 24 24"><path d="M8,5.14V19.14L19,12.14L8,5.14Z" /></svg>
+                        </button>
+                        <button id="stopNarrationButton" class="icon-button" title="עצור" disabled>
+                            <svg viewBox="0 0 24 24"><path d="M18,18H6V6H18V18Z" /></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+             <button class="cancel" id="cancelNarrationSettingsBtn" style="margin-top:15px; float:left;">סגור</button>
+        </div>
+
+        <div class="mini-popup-controls" id="popupGradientGenerator">
+            <div class="drag-handle" title="גרור חלונית"></div>
+            <h4>מחולל גרדיאנט רקע</h4>
+            <div class="popup-section-title-control">
+                <div class="color-picker-row">
+                    <div>
+                        <label for="gradientColorStart">צבע התחלה:</label>
+                        <input type="color" id="gradientColorStart" value="#080321">
+                    </div>
+                    <div>
+                        <label for="gradientColorEnd">צבע סיום:</label>
+                        <input type="color" id="gradientColorEnd" value="#38006b">
+                    </div>
+                </div>
+                <div class="angle-slider-wrapper">
+                    <label for="angleSlider">זווית גרדיאנט: <span id="angleSliderValue">135</span>°</label>
+                    <div id="angleSliderContainer" class="angle-slider-container">
+                        <div id="angleSliderHandle" class="angle-slider-handle"></div>
+                    </div>
+                </div>
+            </div>
+            <hr>
+            <h5>אנימציית רקע</h5>
+             <label><input type="checkbox" id="chkAnimateGradient"> הפעל אנימציית רקע</label>
+            <div class="slider-container-popup">
+                <label for="gradientAnimationSpeed">מהירות אנימציית רקע:</label>
+                <input type="range" id="gradientAnimationSpeed" min="1" max="30" value="15" step="1">
+                <span id="gradientAnimationSpeedValue">15ש'</span>
+            </div>
+            <hr>
+            <h5>אנימציית ברק</h5>
+            <div class="slider-container-popup">
+                <label for="shineAnimationSpeed">מהירות אנימציית ברק:</label>
+                <input type="range" id="shineAnimationSpeed" min="1" max="20" value="8" step="1">
+                <span id="shineAnimationSpeedValue">8ש'</span>
+            </div>
+            <button class="cancel" id="cancelGradientGeneratorBtn" style="margin-top:15px; float:left;">סגור</button>
+        </div>
+
+        <div class="mini-popup-controls" id="popupTitleBannerSettings">
+            <div class="drag-handle" title="גרור חלונית"></div>
+            <h4>הגדרות כותרות ובאנרים</h4>
+            <div class="title-settings-grid">
+                <div class="popup-section-title-control">
+                    <h5>כותרת ראשית</h5>
+                    <label><input type="checkbox" id="chkShowMainTitle"> הצג כותרת ראשית</label>
+                    <textarea id="popupMainTitleText" rows="2"></textarea>
+                    <label><input type="checkbox" id="chkMainTitleBanner"> הצג באנר</label>
+                    <div class="banner-color-palette-popup" id="mainTitleBannerColorPalette"></div>
+                    <label><input type="checkbox" id="chkMainTitleBannerRounded"> פינות מעוגלות</label>
+                    <div class="slider-container-popup">
+                        <label for="mainTitleBannerPaddingSlider">עובי באנר:</label>
+                        <input type="range" id="mainTitleBannerPaddingSlider" min="0" max="0.5" value="0.064" step="0.01">
+                        <span id="mainTitleBannerPaddingValue">0.06rem</span>
+                    </div>
+                    <div class="slider-container-popup">
+                        <label for="mainTitleLineHeightSlider">ריווח שורות:</label>
+                        <input type="range" id="mainTitleLineHeightSlider" min="0.8" max="2.5" value="1.2" step="0.1">
+                        <span id="mainTitleLineHeightValue">1.2</span>
+                    </div>
+                </div>
+                <div class="popup-section-title-control">
+                    <h5>כותרת משנה</h5>
+                    <label><input type="checkbox" id="chkShowSubTitle"> הצג כותרת משנה</label>
+                    <textarea id="popupSubTitleText" rows="2"></textarea>
+                    <label><input type="checkbox" id="chkSubTitleBanner"> הצג באנר</label>
+                    <div class="banner-color-palette-popup" id="subTitleBannerColorPalette"></div>
+                    <label><input type="checkbox" id="chkSubTitleBannerRounded"> פינות מעוגלות</label>
+                     <div class="slider-container-popup">
+                        <label for="subTitleBannerPaddingSlider">עובי באנר:</label>
+                        <input type="range" id="subTitleBannerPaddingSlider" min="0" max="0.5" value="0.08" step="0.01">
+                        <span id="subTitleBannerPaddingValue">0.08rem</span>
+                    </div>
+                    <div class="slider-container-popup">
+                        <label for="subTitleLineHeightSlider">ריווח שורות:</label>
+                        <input type="range" id="subTitleLineHeightSlider" min="0.8" max="2.5" value="1.2" step="0.1">
+                        <span id="subTitleLineHeightValue">1.2</span>
+                    </div>
+                </div>
+            </div>
+            <button class="cancel" id="cancelTitleBannerSettingsBtn" style="margin-top:15px; float:left;">סגור</button>
+        </div>
+
+        <div class="mini-popup-controls" id="popupDisplayMediaSettings"> 
+            <div class="drag-handle" title="גרור חלונית"></div>
+            <h4>אפשרויות פריסה כלליות</h4>
+            <div class="layout-settings-grid">
+                <div class="popup-section" id="layoutOptionsSection">
+                    <h5>פריסה כללית</h5>
+                    <label><input type="checkbox" id="chkShowImagePanel"> הצג פאנל תמונה</label>
+                    <hr>
+                    <label for="inputFullScreenBgUrl">תמונת רקע מלאה (URL):</label>
+                    <input type="text" id="inputFullScreenBgUrl" placeholder="הדבק קישור לתמונה">
+                    <label for="inputFileFullScreenBg">או העלה קובץ רקע מלא:</label>
+                    <input type="file" id="inputFileFullScreenBg" accept="image/*,video/*">
+                    
+                    <div class="slider-container">
+                        <label for="inputFullScreenBgOpacity">שקיפות רקע מלא:</label>
+                        <input type="range" id="inputFullScreenBgOpacity" min="0" max="1" value="1" step="0.01">
+                        <span id="fullScreenBgOpacityValueDisplay">100%</span>
+                    </div>
+
+                    <div class="slider-container">
+                        <label for="inputFullScreenBgPosX">מיקום אופקי של רקע מלא:</label>
+                        <input type="range" id="inputFullScreenBgPosX" min="-50" max="150" value="50" step="1"> <span id="fullScreenBgPosXValueDisplay">50%</span>
+                    </div>
+                    <div class="slider-container">
+                        <label for="inputFullScreenBgPosY">מיקום אנכי של רקע מלא:</label>
+                        <input type="range" id="inputFullScreenBgPosY" min="0" max="100" value="50" step="1">
+                        <span id="fullScreenBgPosYValueDisplay">50%</span>
+                    </div>
+                    <button id="btnRemoveFullScreenBg" class="danger" style="width:100%; margin-top:10px;">הסר תמונת רקע מלאה</button>
+                </div>
+                <div class="popup-section" id="panelMediaControlsSection">
+                    <h5>מדיה (פאנל צד)</h5>
+                    <label for="inputMediaUrl">קישור למדיה:</label>
+                    <input type="text" id="inputMediaUrl" placeholder="הדבק קישור או השאר ריק להעלאה">
+                    <label for="inputFileMedia">או העלה קובץ:</label>
+                    <input type="file" id="inputFileMedia" accept="image/*,video/*">
+                    <hr>
+                    <label for="selectPanelImageSize">גודל תמונה בפאנל:</label>
+                    <select id="selectPanelImageSize">
+                        <option value="cover">כיסוי (Cover)</option>
+                        <option value="contain">הכלה (Contain)</option>
+                        <option value="100% 100%">מתיחה (Stretch)</option>
+                        <option value="auto">אוטומטי (Auto)</option>
+                    </select>
+                    <div class="slider-container"> <label for="inputPanelImagePosX">מיקום X (%):</label>
+                        <input type="range" id="inputPanelImagePosX" min="0" max="100" value="50" step="1">
+                        <span id="panelImagePosXValueDisplay">50%</span>
+                    </div>
+                    <div class="slider-container"> <label for="inputPanelImagePosY">מיקום Y (%):</label>
+                        <input type="range" id="inputPanelImagePosY" min="0" max="100" value="50" step="1">
+                        <span id="panelImagePosYValueDisplay">50%</span>
+                    </div>
+                </div>
+            </div>
+            <button class="cancel" id="cancelDisplayMediaSettingsBtn">סגור</button>
+        </div>
+
+        <div class="mini-popup-controls" id="popupCtrlAnimation">
+            <div class="drag-handle" title="גרור חלונית"></div>
+            <h4>אנימציית כניסה:</h4>
+            <label for="selectEntryAnimation">בחר אנימציה:</label>
+            <select id="selectEntryAnimation">
+                <option value="none">ללא</option>
+                <option value="anim-fade-in">Fade In</option>
+                <option value="anim-slide-in-right">Slide In Right</option>
+                <option value="anim-slide-in-left">Slide In Left</option>
+                <option value="anim-wave-in">Wave In</option>
+            </select>
+            <button class="cancel" id="cancelAnimationCtrlBtn">סגור</button>
+        </div>
+
+        <!-- Inline Text Editor Popup -->
+        <div id="inlineEditor" class="mini-popup-controls"> 
+             <div class="drag-handle" title="גרור חלונית"></div>
+            <label for="inlineEditTextarea" id="inlineEditorLabel">ערוך טקסט:</label>
+            <textarea id="inlineEditTextarea" rows="3"></textarea>
+            <div style="margin-top:15px; text-align:left;">
+                <button id="saveInlineEditBtn">סגור</button> 
+                <button class="cancel" id="cancelInlineEditBtn">בטל</button>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module">
+        // Import Firebase services
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- DOM Elements & App State ---
+        let imagePanelDisplay, contentPanelDisplay, mainTitleDisplayElement, mainTitleWrapper,
+            subTitleDisplayElement, subTitleWrapper,
+            disclaimerTextDisplay, graphicWrapperDisplay, fullScreenBgContainer, topControlsBar,
+            graphicViewArea, 
+            popupDisplayMediaSettings, chkShowImagePanel, inputFullScreenBgUrl, inputFileFullScreenBg,
+            inputFullScreenBgOpacity, fullScreenBgOpacityValueDisplay, 
+            inputFullScreenBgPosX, fullScreenBgPosXValueDisplay, 
+            inputFullScreenBgPosY, fullScreenBgPosYValueDisplay, 
+            btnRemoveFullScreenBg, 
+            inputMediaUrl, inputFileMedia,
+            selectPanelImageSize, 
+            inputPanelImagePosX, panelImagePosXValueDisplay, 
+            inputPanelImagePosY, panelImagePosYValueDisplay, 
+            panelMediaControlsSection,
+            inputMaskOffsetTopBar, maskOffsetValueDisplayTop, selectEntryAnimationGlobal,
+            inlineEditor, inlineEditorLabel, inlineEditTextarea, 
+            iconCtrlTitleBannerSettings, popupTitleBannerSettings,
+            chkShowMainTitle, chkShowSubTitle,
+            chkMainTitleBanner, mainTitleBannerColorPaletteElement, chkMainTitleBannerRounded, popupMainTitleText, mainTitleBannerPaddingSlider, mainTitleBannerPaddingValue,
+            mainTitleLineHeightSlider, mainTitleLineHeightValue,
+            chkSubTitleBanner, subTitleBannerColorPaletteElement, chkSubTitleBannerRounded, popupSubTitleText, subTitleBannerPaddingSlider, subTitleBannerPaddingValue,
+            subTitleLineHeightSlider, subTitleLineHeightValue,
+            iconCtrlGradientGenerator, popupGradientGenerator, gradientColorStart, gradientColorEnd, 
+            angleSliderContainer, angleSliderHandle, angleSliderValue, 
+            chkAnimateGradient, gradientAnimationSpeed, gradientAnimationSpeedValue, 
+            shineAnimationSpeed, shineAnimationSpeedValue,
+            iconCtrlNarrationSettings, popupNarrationSettings, narrationScript,
+            narrationBannerColor, narrationAudioFile, playNarrationButton, stopNarrationButton,
+            narrationBox, narrationText,
+            transcribeAudioButton, transcriptionLanguageSelect, transcriptionStatus,
+            narrationFontSelect, narrationFontWeightSelect, narrationBannerHeightSlider, narrationBannerHeightValue,
+            narrationTextColor,
+            chkNarrationBanner, narrationBannerOptions, narrationBannerOpacitySlider, narrationBannerOpacityValue,
+            narrationLineHeightSlider, narrationLineHeightValue, narrationBulletStyleContainer,
+            editModeButton, previewModeButton;
+
+        let dbUnsubscribe = null;
+        let userId = null;
+        let graphicStateRef = null;
+        let currentMode = 'EDIT'; // 'EDIT' or 'PREVIEW'
+
+        const bannerColorOptions = {
+            yellow: { bg: 'rgba(255, 193, 7, 0.85)', text: '#001f3f' },
+            white: { bg: 'rgba(255, 255, 255, 0.85)', text: '#111111' },
+            darkblue: { bg: 'rgba(0, 31, 63, 0.85)', text: '#ffffff' },
+            red: { bg: 'rgba(220, 53, 69, 0.85)', text: '#ffffff' },
+            none: { bg: 'transparent', text: 'inherit' } 
+        };
+
+        window.appState = {
+            mainTitle: "כותרת ראשית מודגשת", 
+            subTitle: "כותרת משנה עם הסבר נוסף",
+            showMainTitle: true,
+            showSubTitle: true,
+            mainTitleBanner: true,
+            mainTitleBannerColorName: "yellow", 
+            mainTitleBannerRounded: true, 
+            mainTitleBannerPadding: 0.064,
+            mainTitleLineHeight: 1.2,
+            subTitleBanner: true,
+            subTitleBannerColorName: "yellow", 
+            subTitleBannerRounded: false, 
+            subTitleBannerPadding: 0.08,
+            subTitleLineHeight: 1.2,
+            disclaimerText: "דיסקליימר ברירת מחדל",
+            mediaUrl: "", 
+            panelImageSize: "cover",
+            panelImagePosX: "50",
+            panelImagePosY: "50",
+            maskOffset: "5",
+            entryAnimation: "anim-fade-in",
+            gradientColorStart: "#080321", 
+            gradientColorEnd: "#38006b",   
+            gradientAngle: 135,          
+            animateGradient: false,        
+            gradientAnimationSpeed: 15,    
+            shineAnimationDuration: 8,     
+            showImagePanel: true,
+            fullScreenBgUrl: "",
+            fullScreenBgOpacity: 1,
+            fullScreenBgPosX: "50", 
+            fullScreenBgPosY: "50",
+            narrationScript: "כאן יופיע הטקסט לאחר התמלול...",
+            narrationFontFamily: "'Heebo', sans-serif",
+            narrationFontWeight: 400,
+            narrationShowBanner: true,
+            narrationBannerOpacity: 1,
+            narrationBannerHeight: 4,
+            narrationBannerColor: "#00aaff",
+            narrationLineHeight: 1.4,
+            narrationBulletStyle: "none", // 'none', 'dash', 'star', 'circle'
+            narrationTextColor: "#ffffff",
+            isNarrationPlaying: false,
+            apiKey: "AIzaSyCJX4hpninJRuD7pFpjO0omY2xpsQSkOMs", // This key is kept for functionality but not displayed
+            transcriptionLanguage: "he-IL",
+        };
+        
+        // --- Core Functions ---
+        function initializeDOMElements() {
+            imagePanelDisplay = document.getElementById('imagePanelDisplay');
+            contentPanelDisplay = document.getElementById('contentPanelDisplay');
+            mainTitleDisplayElement = document.getElementById('mainTitleDisplay');
+            mainTitleWrapper = mainTitleDisplayElement.querySelector('.text-line-bg-wrapper');
+            subTitleDisplayElement = document.getElementById('subTitleDisplay');
+            subTitleWrapper = subTitleDisplayElement.querySelector('.text-line-bg-wrapper');
+            graphicWrapperDisplay = document.getElementById('graphicWrapperDisplay');
+            fullScreenBgContainer = document.getElementById('fullScreenBgContainer');
+            topControlsBar = document.getElementById('topControlsBar');
+            graphicViewArea = document.getElementById('graphicViewArea');
+            popupDisplayMediaSettings = document.getElementById('popupDisplayMediaSettings');
+            chkShowImagePanel = document.getElementById('chkShowImagePanel');
+            inputFullScreenBgUrl = document.getElementById('inputFullScreenBgUrl');
+            inputFileFullScreenBg = document.getElementById('inputFileFullScreenBg');
+            inputFullScreenBgOpacity = document.getElementById('inputFullScreenBgOpacity');
+            fullScreenBgOpacityValueDisplay = document.getElementById('fullScreenBgOpacityValueDisplay');
+            inputFullScreenBgPosX = document.getElementById('inputFullScreenBgPosX');
+            fullScreenBgPosXValueDisplay = document.getElementById('fullScreenBgPosXValueDisplay');
+            inputFullScreenBgPosY = document.getElementById('inputFullScreenBgPosY');
+            fullScreenBgPosYValueDisplay = document.getElementById('fullScreenBgPosYValueDisplay');
+            btnRemoveFullScreenBg = document.getElementById('btnRemoveFullScreenBg');
+            inputMediaUrl = document.getElementById('inputMediaUrl');
+            inputFileMedia = document.getElementById('inputFileMedia');
+            selectPanelImageSize = document.getElementById('selectPanelImageSize');
+            inputPanelImagePosX = document.getElementById('inputPanelImagePosX');
+            panelImagePosXValueDisplay = document.getElementById('panelImagePosXValueDisplay');
+            inputPanelImagePosY = document.getElementById('inputPanelImagePosY');
+            panelImagePosYValueDisplay = document.getElementById('panelImagePosYValueDisplay');
+            panelMediaControlsSection = document.getElementById('panelMediaControlsSection');
+            inputMaskOffsetTopBar = document.getElementById('inputMaskOffsetTopBar');
+            maskOffsetValueDisplayTop = document.getElementById('maskOffsetValueDisplayTop');
+            selectEntryAnimationGlobal = document.getElementById('selectEntryAnimation');
+            inlineEditor = document.getElementById('inlineEditor');
+            inlineEditorLabel = document.getElementById('inlineEditorLabel');
+            inlineEditTextarea = document.getElementById('inlineEditTextarea');
+            iconCtrlTitleBannerSettings = document.getElementById('iconCtrlTitleBannerSettings');
+            popupTitleBannerSettings = document.getElementById('popupTitleBannerSettings');
+            chkShowMainTitle = document.getElementById('chkShowMainTitle');
+            chkShowSubTitle = document.getElementById('chkShowSubTitle');
+            chkMainTitleBanner = document.getElementById('chkMainTitleBanner');
+            mainTitleBannerColorPaletteElement = document.getElementById('mainTitleBannerColorPalette');
+            chkMainTitleBannerRounded = document.getElementById('chkMainTitleBannerRounded');
+            popupMainTitleText = document.getElementById('popupMainTitleText');
+            mainTitleBannerPaddingSlider = document.getElementById('mainTitleBannerPaddingSlider');
+            mainTitleBannerPaddingValue = document.getElementById('mainTitleBannerPaddingValue');
+            mainTitleLineHeightSlider = document.getElementById('mainTitleLineHeightSlider');
+            mainTitleLineHeightValue = document.getElementById('mainTitleLineHeightValue');
+            chkSubTitleBanner = document.getElementById('chkSubTitleBanner');
+            subTitleBannerColorPaletteElement = document.getElementById('subTitleBannerColorPalette');
+            chkSubTitleBannerRounded = document.getElementById('chkSubTitleBannerRounded');
+            popupSubTitleText = document.getElementById('popupSubTitleText');
+            subTitleBannerPaddingSlider = document.getElementById('subTitleBannerPaddingSlider');
+            subTitleBannerPaddingValue = document.getElementById('subTitleBannerPaddingValue');
+            subTitleLineHeightSlider = document.getElementById('subTitleLineHeightSlider');
+            subTitleLineHeightValue = document.getElementById('subTitleLineHeightValue');
+            iconCtrlGradientGenerator = document.getElementById('iconCtrlGradientGenerator');
+            popupGradientGenerator = document.getElementById('popupGradientGenerator');
+            gradientColorStart = document.getElementById('gradientColorStart');
+            gradientColorEnd = document.getElementById('gradientColorEnd');
+            angleSliderContainer = document.getElementById('angleSliderContainer');
+            angleSliderHandle = document.getElementById('angleSliderHandle');
+            angleSliderValue = document.getElementById('angleSliderValue');
+            chkAnimateGradient = document.getElementById('chkAnimateGradient');
+            gradientAnimationSpeed = document.getElementById('gradientAnimationSpeed');
+            gradientAnimationSpeedValue = document.getElementById('gradientAnimationSpeedValue');
+            shineAnimationSpeed = document.getElementById('shineAnimationSpeed');
+            shineAnimationSpeedValue = document.getElementById('shineAnimationSpeedValue');
+            iconCtrlNarrationSettings = document.getElementById('iconCtrlNarrationSettings');
+            popupNarrationSettings = document.getElementById('popupNarrationSettings');
+            narrationScript = document.getElementById('narrationScript');
+            narrationBannerColor = document.getElementById('narrationBannerColor');
+            narrationAudioFile = document.getElementById('narrationAudioFile');
+            playNarrationButton = document.getElementById('playNarrationButton');
+            stopNarrationButton = document.getElementById('stopNarrationButton');
+            narrationBox = document.getElementById('narrationBox');
+            narrationText = document.getElementById('narrationText');
+            transcribeAudioButton = document.getElementById('transcribeAudioButton');
+            transcriptionLanguageSelect = document.getElementById('transcriptionLanguageSelect');
+            transcriptionStatus = document.getElementById('transcription-status');
+            narrationFontSelect = document.getElementById('narrationFontSelect');
+            narrationFontWeightSelect = document.getElementById('narrationFontWeightSelect');
+            narrationBannerHeightSlider = document.getElementById('narrationBannerHeightSlider');
+            narrationBannerHeightValue = document.getElementById('narrationBannerHeightValue');
+            narrationTextColor = document.getElementById('narrationTextColor');
+            chkNarrationBanner = document.getElementById('chkNarrationBanner');
+            narrationBannerOptions = document.getElementById('narrationBannerOptions');
+            narrationBannerOpacitySlider = document.getElementById('narrationBannerOpacitySlider');
+            narrationBannerOpacityValue = document.getElementById('narrationBannerOpacityValue');
+            narrationLineHeightSlider = document.getElementById('narrationLineHeightSlider');
+            narrationLineHeightValue = document.getElementById('narrationLineHeightValue');
+            narrationBulletStyleContainer = document.getElementById('narrationBulletStyle');
+            editModeButton = document.getElementById('editModeButton');
+            previewModeButton = document.getElementById('previewModeButton');
+        }
+
+        function hexToRgba(hex, alpha = 1) {
+            if (!/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) {
+                return `rgba(0, 0, 0, ${alpha})`; 
+            }
+            let c = hex.substring(1).split('');
+            if (c.length === 3) {
+                c = [c[0], c[0], c[1], c[1], c[2], c[2]];
+            }
+            c = '0x' + c.join('');
+            const r = (c >> 16) & 255;
+            const g = (c >> 8) & 255;
+            const b = c & 255;
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+        
+        function updateGraphic() {
+            if (!imagePanelDisplay) return;
+
+            // Update background
+            if (appState.fullScreenBgUrl) {
+                fullScreenBgContainer.style.backgroundImage = `url('${appState.fullScreenBgUrl}')`;
+            } else {
+                fullScreenBgContainer.style.backgroundImage = 'none';
+            }
+            fullScreenBgContainer.style.opacity = appState.fullScreenBgOpacity;
+            fullScreenBgContainer.style.backgroundPosition = `${appState.fullScreenBgPosX}% ${appState.fullScreenBgPosY}%`;
+            
+            // Update panel visibility and content
+            const maskIconContainer = document.getElementById('topBarMaskSliderContainer');
+            if (appState.showImagePanel) {
+                imagePanelDisplay.classList.remove('hidden');
+                contentPanelDisplay.classList.remove('full-width');
+                if (maskIconContainer) maskIconContainer.style.display = 'flex';
+                handleMedia(appState.mediaUrl, null);
+                imagePanelDisplay.style.backgroundSize = appState.panelImageSize;
+                imagePanelDisplay.style.backgroundPosition = `${appState.panelImagePosX}% ${appState.panelImagePosY}%`;
+                imagePanelDisplay.style.clipPath = `polygon(0% 0%, 100% 0%, calc(100% - ${appState.maskOffset}vw) 100%, 0% 100%)`;
+
+            } else {
+                imagePanelDisplay.classList.add('hidden');
+                contentPanelDisplay.classList.add('full-width');
+                if (maskIconContainer) maskIconContainer.style.display = 'none';
+            }
+            
+            // Update titles
+            mainTitleDisplayElement.classList.toggle('hidden', !appState.showMainTitle);
+            subTitleDisplayElement.classList.toggle('hidden', !appState.showSubTitle);
+            mainTitleDisplayElement.style.setProperty('--main-title-line-height', appState.mainTitleLineHeight);
+            subTitleDisplayElement.style.setProperty('--sub-title-line-height', appState.subTitleLineHeight);
+            mainTitleWrapper.innerHTML = applyBannerToContent(appState.mainTitle, appState.mainTitleBanner, appState.mainTitleBannerColorName, appState.mainTitleBannerRounded, appState.mainTitleBannerPadding);
+            subTitleWrapper.innerHTML = applyBannerToContent(appState.subTitle, appState.subTitleBanner, appState.subTitleBannerColorName, appState.subTitleBannerRounded, appState.subTitleBannerPadding);
+            
+            // Update narration styles
+            narrationText.style.setProperty('--narration-font', appState.narrationFontFamily);
+            narrationText.style.setProperty('--narration-font-weight', appState.narrationFontWeight);
+            narrationText.style.setProperty('--narration-line-height', appState.narrationLineHeight);
+            narrationText.style.setProperty('--narration-text-color', appState.narrationTextColor);
+            const bannerColorRgba = hexToRgba(appState.narrationBannerColor, appState.narrationBannerOpacity);
+            narrationText.style.setProperty('--narration-banner-color', bannerColorRgba);
+            narrationText.style.setProperty('--narration-banner-vertical-padding', `${appState.narrationBannerHeight / 16}em`);
+
+            if (!appState.isNarrationPlaying) {
+                renderNarrationText(appState.narrationScript);
+            }
+
+            if (playNarrationButton) playNarrationButton.disabled = appState.isNarrationPlaying;
+            if (stopNarrationButton) stopNarrationButton.disabled = !appState.isNarrationPlaying;
+
+            // Update disclaimer
+            disclaimerTextDisplay = document.getElementById('disclaimerTextDisplayInternal');
+            if (disclaimerTextDisplay) {
+                disclaimerTextDisplay.innerHTML = appState.disclaimerText.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            }
+            
+            // Update other styles
+            if (inputMaskOffsetTopBar) inputMaskOffsetTopBar.value = appState.maskOffset;
+            if (maskOffsetValueDisplayTop) maskOffsetValueDisplayTop.textContent = appState.maskOffset + 'vw';
+            graphicWrapperDisplay.style.background = `linear-gradient(${appState.gradientAngle}deg, ${appState.gradientColorStart}, ${appState.gradientColorEnd})`;
+            graphicWrapperDisplay.classList.toggle('animated-gradient', appState.animateGradient);
+            graphicWrapperDisplay.style.setProperty('--gradient-animation-speed', `${appState.gradientAnimationSpeed}s`);
+            const glowEffect = document.querySelector('.glow-effect-shared');
+            if (glowEffect) {
+                glowEffect.style.animationDuration = `${appState.shineAnimationDuration}s`;
+            }
+        }
+        
+        function setMode(mode) {
+            currentMode = mode;
+            editModeButton.classList.toggle('active', mode === 'EDIT');
+            previewModeButton.classList.toggle('active', mode === 'PREVIEW');
+            
+            if (mode === 'EDIT') {
+                stopNarrationAnimation();
+                 // Restore elements to their static, visible state
+                const allElements = [mainTitleDisplayElement, subTitleDisplayElement, disclaimerTextDisplay, imagePanelDisplay];
+                allElements.forEach(el => {
+                    if (el) {
+                        el.classList.remove('anim-fade-in', 'anim-slide-in-right', 'anim-slide-in-left', 'anim-wave-in');
+                        el.style.animation = 'none';
+                        el.style.opacity = '1';
+                    }
+                });
+                if (imagePanelDisplay) {
+                    imagePanelDisplay.style.transition = 'none';
+                     imagePanelDisplay.style.clipPath = `polygon(0% 0%, 100% 0%, calc(100% - ${appState.maskOffset}vw) 100%, 0% 100%)`;
+                }
+                updateGraphic();
+
+            } else { // PREVIEW mode
+                runFullPreview();
+            }
+        }
+
+        function runFullPreview() {
+            if (appState.isNarrationPlaying) {
+                stopNarrationAnimation();
+            }
+            
+            // 1. Reset all animated elements to their starting state
+            const elementsToAnimate = [mainTitleDisplayElement, subTitleDisplayElement, disclaimerTextDisplay];
+            elementsToAnimate.forEach(el => {
+                if(el) {
+                    el.style.animation = 'none';
+                    el.className = el.className.replace(/\banim-\S+/g, '').trim(); 
+                    void el.offsetWidth;
+                    el.style.opacity = '0';
+                }
+            });
+
+            if (imagePanelDisplay) {
+                imagePanelDisplay.style.transition = 'none';
+                imagePanelDisplay.style.clipPath = 'polygon(0% 0%, 0% 0%, 0% 100%, 0% 100%)';
+            }
+            narrationText.innerHTML = '';
+
+            setTimeout(() => {
+                const animationClass = appState.entryAnimation;
+                
+                // 2. Animate titles & disclaimer
+                applyAnimationWithDelay(mainTitleDisplayElement, animationClass, 0, true);
+                applyAnimationWithDelay(subTitleDisplayElement, animationClass, 300, true);
+                if (disclaimerTextDisplay) {
+                     applyAnimationWithDelay(disclaimerTextDisplay, animationClass, 750, true);
+                }
+
+                // 3. Animate mask line over 2 seconds
+                if (imagePanelDisplay && appState.showImagePanel) {
+                    imagePanelDisplay.style.transition = 'clip-path 2s cubic-bezier(0.25, 1, 0.5, 1)';
+                    imagePanelDisplay.style.clipPath = `polygon(0% 0%, 100% 0%, calc(100% - ${appState.maskOffset}vw) 100%, 0% 100%)`;
+                }
+
+                // 4. Start narration after mask animation
+                setTimeout(() => {
+                    if (appState.narrationScript.trim()) {
+                        runNarrationAnimation();
+                    }
+                }, 2000);
+
+            }, 50);
+        }
+
+        function addEventListenersAfterDOM() {
+            editModeButton.addEventListener('click', () => setMode('EDIT'));
+            previewModeButton.addEventListener('click', () => setMode('PREVIEW'));
+
+            document.getElementById('iconCtrlDisplayMedia').addEventListener('click', (e) => openPopup('popupDisplayMediaSettings', e.currentTarget));
+            document.getElementById('iconCtrlAnimation').addEventListener('click', (e) => openPopup('popupCtrlAnimation', e.currentTarget));
+            iconCtrlTitleBannerSettings.addEventListener('click', (e) => openPopup('popupTitleBannerSettings', e.currentTarget));
+            iconCtrlGradientGenerator.addEventListener('click', (e) => openPopup('popupGradientGenerator', e.currentTarget));
+            iconCtrlNarrationSettings.addEventListener('click', (e) => openPopup('popupNarrationSettings', e.currentTarget));
+            
+            document.getElementById('mainTitleEditIcon').addEventListener('click', () => editTextElement(mainTitleWrapper));
+            document.getElementById('subTitleEditIcon').addEventListener('click', () => editTextElement(subTitleWrapper));
+            
+            document.getElementById('cancelNarrationSettingsBtn').addEventListener('click', () => closePopup('popupNarrationSettings'));
+            document.getElementById('cancelGradientGeneratorBtn').addEventListener('click', () => closePopup('popupGradientGenerator'));
+            document.getElementById('cancelTitleBannerSettingsBtn').addEventListener('click', () => closePopup('popupTitleBannerSettings'));
+            document.getElementById('cancelDisplayMediaSettingsBtn').addEventListener('click', () => closePopup('popupDisplayMediaSettings'));
+            document.getElementById('cancelAnimationCtrlBtn').addEventListener('click', () => closePopup('popupCtrlAnimation'));
+            document.getElementById('saveInlineEditBtn').addEventListener('click', saveInlineEdit);
+            document.getElementById('cancelInlineEditBtn').addEventListener('click', cancelInlineEdit);
+            
+            chkShowMainTitle.addEventListener('change', (e) => setState({ showMainTitle: e.target.checked }));
+            chkShowSubTitle.addEventListener('change', (e) => setState({ showSubTitle: e.target.checked }));
+
+            chkMainTitleBanner.addEventListener('change', () => setState({ mainTitleBanner: chkMainTitleBanner.checked, mainTitleBannerRounded: !chkMainTitleBanner.checked ? false : appState.mainTitleBannerRounded }));
+            chkMainTitleBannerRounded.addEventListener('change', () => setState({ mainTitleBannerRounded: chkMainTitleBannerRounded.checked }));
+            mainTitleBannerPaddingSlider.addEventListener('input', () => {
+                const padding = parseFloat(mainTitleBannerPaddingSlider.value);
+                mainTitleBannerPaddingValue.textContent = `${padding.toFixed(2)}rem`;
+                setState({ mainTitleBannerPadding: padding });
+            });
+            mainTitleLineHeightSlider.addEventListener('input', () => {
+                const lineHeight = parseFloat(mainTitleLineHeightSlider.value);
+                mainTitleLineHeightValue.textContent = lineHeight.toFixed(1);
+                setState({ mainTitleLineHeight: lineHeight });
+            });
+            popupMainTitleText.addEventListener('input', (e) => setState({ mainTitle: e.target.value }));
+            chkSubTitleBanner.addEventListener('change', () => setState({ subTitleBanner: chkSubTitleBanner.checked, subTitleBannerRounded: !chkSubTitleBanner.checked ? false : appState.subTitleBannerRounded }));
+            chkSubTitleBannerRounded.addEventListener('change', () => setState({ subTitleBannerRounded: chkSubTitleBannerRounded.checked }));
+            subTitleBannerPaddingSlider.addEventListener('input', () => {
+                const padding = parseFloat(subTitleBannerPaddingSlider.value);
+                subTitleBannerPaddingValue.textContent = `${padding.toFixed(2)}rem`;
+                setState({ subTitleBannerPadding: padding });
+            });
+             subTitleLineHeightSlider.addEventListener('input', () => {
+                const lineHeight = parseFloat(subTitleLineHeightSlider.value);
+                subTitleLineHeightValue.textContent = lineHeight.toFixed(1);
+                setState({ subTitleLineHeight: lineHeight });
+            });
+            popupSubTitleText.addEventListener('input', (e) => setState({ subTitle: e.target.value }));
+            narrationScript.addEventListener('input', (e) => {
+                const textarea = e.target;
+                if (textarea.value.includes('+')) {
+                    const bulletChar = getBulletChar(appState.narrationBulletStyle);
+                    if(bulletChar) {
+                        textarea.value = textarea.value.replace(/\+/g, bulletChar);
+                    } else {
+                         textarea.value = textarea.value.replace(/\+/g, '');
+                    }
+                }
+                setState({ narrationScript: textarea.value });
+            });
+            narrationBannerColor.addEventListener('input', (e) => setState({ narrationBannerColor: e.target.value }));
+            narrationFontSelect.addEventListener('change', (e) => setState({ narrationFontFamily: e.target.value }));
+            narrationFontWeightSelect.addEventListener('change', (e) => setState({ narrationFontWeight: e.target.value }));
+            narrationLineHeightSlider.addEventListener('input', e => {
+                const lineHeight = parseFloat(e.target.value);
+                narrationLineHeightValue.textContent = lineHeight.toFixed(1);
+                setState({ narrationLineHeight: lineHeight });
+            });
+            narrationBulletStyleContainer.querySelectorAll('.icon-button').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    narrationBulletStyleContainer.querySelectorAll('.icon-button').forEach(b => b.classList.remove('active'));
+                    e.currentTarget.classList.add('active');
+                    setState({ narrationBulletStyle: e.currentTarget.dataset.style });
+                });
+            });
+            narrationBannerHeightSlider.addEventListener('input', (e) => {
+                const height = parseInt(e.target.value, 10);
+                narrationBannerHeightValue.textContent = `${height}px`;
+                setState({ narrationBannerHeight: height });
+            });
+            narrationTextColor.addEventListener('input', (e) => setState({ narrationTextColor: e.target.value }));
+            chkNarrationBanner.addEventListener('change', (e) => {
+                const isEnabled = e.target.checked;
+                narrationBannerOptions.style.display = isEnabled ? 'block' : 'none';
+                setState({ narrationShowBanner: isEnabled });
+            });
+            narrationBannerOpacitySlider.addEventListener('input', (e) => {
+                const opacity = parseFloat(e.target.value);
+                narrationBannerOpacityValue.textContent = `${Math.round(opacity * 100)}%`;
+                setState({ narrationBannerOpacity: opacity });
+            });
+            playNarrationButton.addEventListener('click', runNarrationAnimation);
+            stopNarrationButton.addEventListener('click', stopNarrationAnimation);
+            transcribeAudioButton.addEventListener('click', handleAudioTranscription);
+            transcriptionLanguageSelect.addEventListener('change', (e) => setState({ transcriptionLanguage: e.target.value }));
+            const updateGradientState = () => setState({ gradientColorStart: gradientColorStart.value, gradientColorEnd: gradientColorEnd.value });
+            gradientColorStart.addEventListener('input', updateGradientState);
+            gradientColorEnd.addEventListener('input', updateGradientState);
+            chkAnimateGradient.addEventListener('change', (e) => setState({ animateGradient: e.target.checked }));
+            gradientAnimationSpeed.addEventListener('input', (e) => {
+                const speed = parseInt(e.target.value);
+                gradientAnimationSpeedValue.textContent = `${speed}ש'`;
+                setState({ gradientAnimationSpeed: speed });
+            });
+            shineAnimationSpeed.addEventListener('input', (e) => {
+                const duration = parseInt(e.target.value);
+                shineAnimationSpeedValue.textContent = `${duration}ש'`;
+                setState({ shineAnimationDuration: duration });
+            });
+            let isAngleDragging = false;
+            const updateAngle = (event) => {
+                if (!isAngleDragging) return;
+                const rect = angleSliderContainer.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                const clientX = event.touches ? event.touches[0].clientX : event.clientX;
+                const clientY = event.touches ? event.touches[0].clientY : event.clientY;
+                let angle = Math.round((Math.atan2(clientY - centerY, clientX - centerX) * (180 / Math.PI) + 450) % 360);
+                angleSliderValue.textContent = `${angle}°`;
+                setAngleSliderHandle(angle);
+                setState({ gradientAngle: angle });
+            };
+            angleSliderContainer.addEventListener('mousedown', (e) => { isAngleDragging = true; updateAngle(e); });
+            document.addEventListener('mousemove', (e) => updateAngle(e));
+            document.addEventListener('mouseup', () => { isAngleDragging = false; });
+            angleSliderContainer.addEventListener('touchstart', (e) => { isAngleDragging = true; updateAngle(e); e.preventDefault(); }, { passive: false });
+            document.addEventListener('touchmove', (e) => updateAngle(e));
+            document.addEventListener('touchend', () => { isAngleDragging = false; });
+            if (inputMaskOffsetTopBar) {
+                inputMaskOffsetTopBar.addEventListener('input', (e) => {
+                    if (maskOffsetValueDisplayTop) maskOffsetValueDisplayTop.textContent = e.target.value + 'vw';
+                    setState({ maskOffset: e.target.value });
+                });
+            }
+            if (chkShowImagePanel) {
+                chkShowImagePanel.addEventListener('change', (e) => {
+                    panelMediaControlsSection.style.display = e.target.checked ? 'block' : 'none';
+                    setState({ showImagePanel: e.target.checked });
+                });
+            }
+            if (selectEntryAnimationGlobal) {
+                selectEntryAnimationGlobal.addEventListener('change', (e) => setState({ entryAnimation: e.target.value }));
+            }
+            if (inputFullScreenBgOpacity) {
+                inputFullScreenBgOpacity.addEventListener('input', (e) => {
+                    const opacity = parseFloat(e.target.value);
+                    fullScreenBgOpacityValueDisplay.textContent = `${Math.round(opacity * 100)}%`;
+                    setState({ fullScreenBgOpacity: opacity });
+                });
+            }
+            if (inputFullScreenBgPosX) {
+                inputFullScreenBgPosX.addEventListener('input', (e) => {
+                    fullScreenBgPosXValueDisplay.textContent = `${e.target.value}%`;
+                    setState({ fullScreenBgPosX: e.target.value });
+                });
+            }
+            if (inputFullScreenBgPosY) {
+                inputFullScreenBgPosY.addEventListener('input', (e) => {
+                    fullScreenBgPosYValueDisplay.textContent = `${e.target.value}%`;
+                    setState({ fullScreenBgPosY: e.target.value });
+                });
+            }
+            if (btnRemoveFullScreenBg) {
+                btnRemoveFullScreenBg.addEventListener('click', () => setState({ fullScreenBgUrl: "" }));
+            }
+            if (inputPanelImagePosX) {
+                inputPanelImagePosX.addEventListener('input', (e) => {
+                    panelImagePosXValueDisplay.textContent = `${e.target.value}%`;
+                    setState({ panelImagePosX: e.target.value });
+                });
+            }
+            if (inputPanelImagePosY) {
+                inputPanelImagePosY.addEventListener('input', (e) => {
+                    panelImagePosYValueDisplay.textContent = `${e.target.value}%`;
+                    setState({ panelImagePosY: e.target.value });
+                });
+            }
+            if (selectPanelImageSize) {
+                selectPanelImageSize.addEventListener('change', (e) => setState({ panelImageSize: e.target.value }));
+            }
+            if (inputMediaUrl) {
+                inputMediaUrl.addEventListener('input', (e) => setState({ mediaUrl: e.target.value, mediaFile: null }));
+            }
+            if (inputFullScreenBgUrl) {
+                inputFullScreenBgUrl.addEventListener('input', (e) => setState({ fullScreenBgUrl: e.target.value, fullScreenBgFile: null }));
+            }
+            inlineEditTextarea.addEventListener('input', (e) => {
+                if (currentEditingElement) {
+                    const textType = currentEditingElement.dataset.textType;
+                    const newState = {};
+                    newState[textType] = e.target.value;
+                    setState(newState);
+                }
+            });
+            document.addEventListener('mousemove', () => showControlsBar());
+            document.addEventListener('click', (event) => {
+                const isTopBarControl = event.target.closest('.top-controls-bar');
+                const isPopup = event.target.closest('.mini-popup-controls');
+                if (!isTopBarControl && !isPopup) {
+                    closeAllPopups();
+                }
+                showControlsBar(isTopBarControl || isPopup);
+            });
+            imagePanelDisplay.addEventListener('dragover', (e) => { e.preventDefault(); imagePanelDisplay.classList.add('dragover'); });
+            imagePanelDisplay.addEventListener('dragleave', () => imagePanelDisplay.classList.remove('dragover'));
+            imagePanelDisplay.addEventListener('drop', (e) => {
+                e.preventDefault();
+                imagePanelDisplay.classList.remove('dragover');
+                const file = e.dataTransfer.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (re) => setState({ mediaUrl: re.target.result });
+                    reader.readAsDataURL(file);
+                }
+            });
+            if (inputFileMedia) {
+                inputFileMedia.addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (re) => setState({ mediaUrl: re.target.result });
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
+            if (inputFileFullScreenBg) {
+                inputFileFullScreenBg.addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (re) => setState({ fullScreenBgUrl: re.target.result });
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
+            window.addEventListener('message', (event) => {
+                const { type, templateData } = event.data;
+                if (type === 'updateTemplateData' && templateData) {
+                    console.log('Data received via postMessage:', templateData);
+                    setState(templateData);
+                }
+            });
+        }
+        
+        let currentEditingElement = null;
+        function makeDraggable(popupElement) {
+            let offsetX, offsetY, isDragging = false;
+            const handle = popupElement.querySelector('.drag-handle') || popupElement.querySelector('h4');
+            if (!handle) return;
+            const startDrag = (e) => {
+                if (e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
+                isDragging = true;
+                popupElement.classList.add('dragging');
+                
+                const rect = popupElement.getBoundingClientRect();
+                popupElement.style.right = 'auto';
+                popupElement.style.transform = 'none';
+                popupElement.style.left = `${rect.left}px`;
+                popupElement.style.top = `${rect.top}px`;
+
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                offsetX = clientX - rect.left;
+                offsetY = clientY - rect.top;
+
+                document.querySelectorAll('.mini-popup-controls').forEach(p => p.style.zIndex = 1001);
+                popupElement.style.zIndex = 1002;
+            };
+            const doDrag = (e) => {
+                if (!isDragging) return;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                let newX = clientX - offsetX;
+                let newY = clientY - offsetY;
+                const vpWidth = window.innerWidth;
+                const vpHeight = window.innerHeight;
+                const popupWidth = popupElement.offsetWidth;
+                const popupHeight = popupElement.offsetHeight;
+                newX = Math.max(0, Math.min(newX, vpWidth - popupWidth));
+                newY = Math.max(0, Math.min(newY, vpHeight - popupHeight));
+                popupElement.style.left = `${newX}px`;
+                popupElement.style.top = `${newY}px`;
+            };
+            const stopDrag = () => {
+                if (isDragging) {
+                    isDragging = false;
+                    popupElement.classList.remove('dragging');
+                }
+            };
+            handle.addEventListener('mousedown', startDrag);
+            document.addEventListener('mousemove', doDrag);
+            document.addEventListener('mouseup', stopDrag);
+            handle.addEventListener('touchstart', startDrag, { passive: false });
+            document.addEventListener('touchmove', doDrag, { passive: false });
+            document.addEventListener('touchend', stopDrag);
+        }
+
+        function openPopup(popupId, triggerElement) {
+            closeAllPopups();
+            const popup = document.getElementById(popupId);
+            if (!popup) return;
+            
+            if (!popup.classList.contains('dragging')) {
+                popup.style.right = ''; 
+                popup.style.left = '';
+                popup.style.transform = '';
+            }
+
+            popup.classList.add('visible');
+            showControlsBar(true);
+
+            if (popupId === 'popupDisplayMediaSettings') {
+                if (!popup.classList.contains('dragging')) {
+                    popup.style.left = '50%';
+                    popup.style.transform = 'translateX(-50%)';
+                }
+                chkShowImagePanel.checked = appState.showImagePanel;
+                inputFullScreenBgUrl.value = appState.fullScreenBgUrl.startsWith('data:') ? '' : appState.fullScreenBgUrl;
+                inputFullScreenBgOpacity.value = appState.fullScreenBgOpacity;
+                fullScreenBgOpacityValueDisplay.textContent = Math.round(appState.fullScreenBgOpacity * 100) + '%';
+                inputFullScreenBgPosX.value = appState.fullScreenBgPosX;
+                fullScreenBgPosXValueDisplay.textContent = appState.fullScreenBgPosX + '%';
+                inputFullScreenBgPosY.value = appState.fullScreenBgPosY;
+                fullScreenBgPosYValueDisplay.textContent = appState.fullScreenBgPosY + '%';
+                inputMediaUrl.value = appState.mediaUrl.startsWith('data:') ? '' : appState.mediaUrl;
+                selectPanelImageSize.value = appState.panelImageSize;
+                inputPanelImagePosX.value = appState.panelImagePosX;
+                panelImagePosXValueDisplay.textContent = appState.panelImagePosX + '%';
+                inputPanelImagePosY.value = appState.panelImagePosY;
+                panelImagePosYValueDisplay.textContent = appState.panelImagePosY + '%';
+                panelMediaControlsSection.style.display = appState.showImagePanel ? 'block' : 'none';
+            } else if (popupId === 'popupTitleBannerSettings') {
+                 if (!popup.classList.contains('dragging')) {
+                    popup.style.right = '20px';
+                }
+                chkShowMainTitle.checked = appState.showMainTitle;
+                chkShowSubTitle.checked = appState.showSubTitle;
+                popupMainTitleText.value = appState.mainTitle;
+                chkMainTitleBanner.checked = appState.mainTitleBanner;
+                chkMainTitleBannerRounded.checked = appState.mainTitleBannerRounded;
+                mainTitleBannerPaddingSlider.value = appState.mainTitleBannerPadding;
+                mainTitleBannerPaddingValue.textContent = `${Number(appState.mainTitleBannerPadding).toFixed(2)}rem`;
+                mainTitleLineHeightSlider.value = appState.mainTitleLineHeight;
+                mainTitleLineHeightValue.textContent = Number(appState.mainTitleLineHeight).toFixed(1);
+                populateBannerColorPalette(mainTitleBannerColorPaletteElement, 'mainTitle');
+                popupSubTitleText.value = appState.subTitle;
+                chkSubTitleBanner.checked = appState.subTitleBanner;
+                chkSubTitleBannerRounded.checked = appState.subTitleBannerRounded;
+                subTitleBannerPaddingSlider.value = appState.subTitleBannerPadding;
+                subTitleBannerPaddingValue.textContent = `${Number(appState.subTitleBannerPadding).toFixed(2)}rem`;
+                subTitleLineHeightSlider.value = appState.subTitleLineHeight;
+                subTitleLineHeightValue.textContent = Number(appState.subTitleLineHeight).toFixed(1);
+                populateBannerColorPalette(subTitleBannerColorPaletteElement, 'subTitle');
+            } else if (popupId === 'popupGradientGenerator') {
+                 if (!popup.classList.contains('dragging')) {
+                    popup.style.left = '20px';
+                }
+                gradientColorStart.value = appState.gradientColorStart;
+                gradientColorEnd.value = appState.gradientColorEnd;
+                setAngleSliderHandle(appState.gradientAngle);
+                angleSliderValue.textContent = `${appState.gradientAngle}°`;
+                chkAnimateGradient.checked = appState.animateGradient;
+                gradientAnimationSpeed.value = appState.gradientAnimationSpeed;
+                gradientAnimationSpeedValue.textContent = `${appState.gradientAnimationSpeed}ש'`;
+                shineAnimationSpeed.value = appState.shineAnimationDuration;
+                shineAnimationSpeedValue.textContent = `${appState.shineAnimationDuration}ש'`;
+            } else if (popupId === 'popupNarrationSettings') {
+                 if (!popup.classList.contains('dragging')) {
+                    popup.style.left = '50%';
+                    popup.style.transform = 'translateX(-50%)';
+                }
+                narrationScript.value = appState.narrationScript;
+                narrationFontSelect.value = appState.narrationFontFamily;
+                narrationFontWeightSelect.value = appState.narrationFontWeight;
+                narrationLineHeightSlider.value = appState.narrationLineHeight;
+                narrationLineHeightValue.textContent = Number(appState.narrationLineHeight).toFixed(1);
+                narrationBulletStyleContainer.querySelectorAll('.icon-button').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.style === appState.narrationBulletStyle);
+                });
+                chkNarrationBanner.checked = appState.narrationShowBanner;
+                narrationBannerOptions.style.display = appState.narrationShowBanner ? 'block' : 'none';
+                narrationBannerOpacitySlider.value = appState.narrationBannerOpacity;
+                narrationBannerOpacityValue.textContent = `${Math.round(appState.narrationBannerOpacity * 100)}%`;
+                narrationBannerHeightSlider.value = appState.narrationBannerHeight;
+                narrationBannerHeightValue.textContent = `${appState.narrationBannerHeight}px`;
+                narrationBannerColor.value = appState.narrationBannerColor;
+                narrationTextColor.value = appState.narrationTextColor;
+                transcriptionLanguageSelect.value = appState.transcriptionLanguage;
+            } else if (popupId === 'popupCtrlAnimation') {
+                selectEntryAnimationGlobal.value = appState.entryAnimation;
+            }
+
+            makeDraggable(popup);
+        }
+
+        function closePopup(popupId) {
+            const popup = document.getElementById(popupId);
+            if (popup) popup.classList.remove('visible');
+            showControlsBar();
+        }
+
+        function closeAllPopups() {
+            document.querySelectorAll('.mini-popup-controls.visible').forEach(p => p.classList.remove('visible'));
+            if (inlineEditor && inlineEditor.style.display === 'block') cancelInlineEdit();
+            showControlsBar();
+        }
+
+        function editTextElement(elementToEdit) {
+            closeAllPopups();
+            const textType = elementToEdit.dataset.textType;
+            currentEditingElement = elementToEdit;
+            inlineEditorLabel.textContent = `ערוך ${textType === 'mainTitle' ? 'כותרת ראשית' : textType === 'subTitle' ? 'כותרת משנה' : 'דיסקליימר'}:`;
+            if (textType === 'mainTitle' || textType === 'subTitle' || textType === 'disclaimer') {
+                inlineEditTextarea.value = appState[textType];
+            }
+            inlineEditor.style.left = '50%';
+            inlineEditor.style.top = '25%';
+            inlineEditor.style.transform = 'translateX(-50%)';
+            inlineEditor.style.display = 'block';
+            makeDraggable(inlineEditor);
+            showControlsBar(true);
+            inlineEditTextarea.focus();
+        }
+
+        function saveInlineEdit() {
+            inlineEditor.style.display = 'none';
+            currentEditingElement = null;
+            showControlsBar();
+        }
+
+        function cancelInlineEdit() {
+            inlineEditor.style.display = 'none';
+            currentEditingElement = null;
+            showControlsBar();
+        }
+
+        function populateBannerColorPalette(paletteElement, textTypeKey) {
+            paletteElement.innerHTML = '';
+            Object.keys(bannerColorOptions).forEach(colorName => {
+                const swatch = document.createElement('div');
+                swatch.className = 'color-swatch';
+                swatch.style.backgroundColor = bannerColorOptions[colorName].bg === 'transparent' ? '#eee' : bannerColorOptions[colorName].bg;
+                if (bannerColorOptions[colorName].bg === 'transparent') swatch.style.border = '1px dashed #333';
+                swatch.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const stateUpdate = {};
+                    stateUpdate[textTypeKey + 'BannerColorName'] = colorName;
+                    stateUpdate[textTypeKey + 'Banner'] = colorName !== 'none';
+                    setState(stateUpdate);
+                    if (textTypeKey === 'mainTitle') chkMainTitleBanner.checked = (colorName !== 'none');
+                    if (textTypeKey === 'subTitle') chkSubTitleBanner.checked = (colorName !== 'none');
+                });
+                paletteElement.appendChild(swatch);
+            });
+        }
+        
+        let topBarHideTimeout;
+        window.showControlsBar = function(keepVisible = false) {
+            if (!topControlsBar || !graphicViewArea) return;
+            topControlsBar.classList.remove('hidden-bar');
+            graphicViewArea.classList.remove('full-view-active');
+            clearTimeout(topBarHideTimeout);
+            if (!keepVisible) {
+                topBarHideTimeout = setTimeout(() => {
+                    const isPopupOpen = document.querySelector('.mini-popup-controls.visible');
+                    if (!isPopupOpen) {
+                        topControlsBar.classList.add('hidden-bar');
+                        graphicViewArea.classList.add('full-view-active');
+                    }
+                }, 7000);
+            }
+        }
+        
+        function applyBannerToContent(text, showBanner, bannerColorName, bannerRounded, bannerPadding) {
+            if (!text || text.trim() === '') return '';
+            const lines = text.replace(/</g, "&lt;").replace(/>/g, "&gt;").split('\n');
+            const bannerColors = bannerColorOptions[bannerColorName] || bannerColorOptions.yellow;
+            const borderRadiusStyle = bannerRounded ? '5px' : '0px';
+
+            return lines.map(line => {
+                if (line.trim() === '') return '<br>';
+                if (showBanner && bannerColors.bg !== 'transparent') {
+                    return `<span style="display:inline-block;"><span class="text-line-bg" style="background-color: ${bannerColors.bg}; color: ${bannerColors.text}; border-radius: ${borderRadiusStyle}; --title-banner-padding: ${bannerPadding}em;">${line}</span></span>`;
+                }
+                return `<span>${line}</span>`;
+            }).join('');
+        }
+        
+        function applyAnimationWithDelay(element, animationClass, delay, force = false) {
+            if (!element) return;
+            
+            // Always clear old animations before applying new ones.
+            element.style.animation = 'none';
+            element.className = element.className.replace(/\banim-\S+/g, '').trim();
+            void element.offsetWidth; // Force browser reflow to register the cleared animation state.
+            
+            if (force) { // This is for PREVIEW mode
+                element.style.opacity = '0';
+                setTimeout(() => {
+                    if (animationClass && animationClass !== "none") {
+                        element.classList.add(animationClass);
+                    }
+                    element.style.opacity = '1'; 
+                }, delay);
+            } else { // This is for EDIT mode
+                 element.style.opacity = '1';
+            }
+        }
+
+
+        function handleMedia(url, fileObject) {
+            const mediaContentContainer = imagePanelDisplay;
+            mediaContentContainer.innerHTML = '';
+            mediaContentContainer.style.backgroundImage = 'none';
+            const mediaEditOverlay = document.createElement('div');
+            mediaEditOverlay.className = 'edit-icon-overlay';
+            mediaEditOverlay.id = 'imagePanelEditOverlay';
+            mediaEditOverlay.innerHTML = `<svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>`;
+            mediaContentContainer.appendChild(mediaEditOverlay);
+            mediaEditOverlay.addEventListener('click', () => openPopup('popupDisplayMediaSettings', mediaEditOverlay));
+            const disclaimerContainer = document.createElement('div');
+            disclaimerContainer.className = 'disclaimer-container';
+            let currentDisclaimerText = appState.disclaimerText.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            disclaimerContainer.innerHTML = `
+                <span class="disclaimer-text" id="disclaimerTextDisplayInternal" data-text-type="disclaimer">${currentDisclaimerText}</span>
+                <span class="edit-icon" id="disclaimerEditIconInternal">
+                    <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                </span>`;
+            mediaContentContainer.appendChild(disclaimerContainer);
+            document.getElementById('disclaimerEditIconInternal').addEventListener('click', () => {
+                editTextElement(document.getElementById('disclaimerTextDisplayInternal'));
+            });
+            disclaimerTextDisplay = document.getElementById('disclaimerTextDisplayInternal');
+            const src = fileObject ? URL.createObjectURL(fileObject) : url;
+            if (!src) {
+                mediaContentContainer.style.backgroundImage = "url('https://placehold.co/640x1080/transparent/fff?text=No%20Image')";
+                return;
+            }
+            const isVideo = (fileObject && fileObject.type.startsWith('video')) || /\.(mp4|webm|ogg|mov)$/i.test(src);
+            if (isVideo) {
+                const video = document.createElement('video');
+                video.src = src;
+                video.autoplay = true;
+                video.loop = true;
+                video.muted = true;
+                video.playsInline = true;
+                mediaContentContainer.insertBefore(video, mediaEditOverlay);
+            } else {
+                mediaContentContainer.style.backgroundImage = `url('${src}')`;
+            }
+        }
+        
+        function setAngleSliderHandle(angle) {
+            if (!angleSliderContainer || !angleSliderHandle) return;
+            const radius = angleSliderContainer.offsetWidth / 2 - angleSliderHandle.offsetWidth / 2;
+            const rad = (angle - 90) * (Math.PI / 180);
+            const x = radius * Math.cos(rad);
+            const y = radius * Math.sin(rad);
+            angleSliderHandle.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;
+        }
+
+        let currentAudioPlayer;
+        let animationFrameId;
+        function setTranscriptionStatus(message, type = 'normal') {
+            transcriptionStatus.textContent = message;
+            transcriptionStatus.className = '';
+            if (type === 'error') {
+                transcriptionStatus.classList.add('status-error');
+            } else if (type === 'loading') {
+                transcriptionStatus.classList.add('status-loading');
+            } else {
+                transcriptionStatus.classList.add('status-success');
+            }
+        }
+
+        async function handleAudioTranscription() {
+            const file = narrationAudioFile.files[0];
+            const apiKey = appState.apiKey.trim();
+            if (!apiKey) {
+                setTranscriptionStatus("שגיאה: חסר מפתח API", "error");
+                return;
+            }
+            if (!file) {
+                setTranscriptionStatus("שגיאה: לא נבחר קובץ שמע", "error");
+                return;
+            }
+            setTranscriptionStatus("מעבד...", "loading");
+            transcribeAudioButton.disabled = true;
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const audioBase64 = e.target.result.split(',')[1];
+                    const langName = transcriptionLanguageSelect.options[transcriptionLanguageSelect.selectedIndex].dataset.langName;
+                    const prompt = `Please transcribe the following audio. The audio is in ${langName}. Provide only the transcribed text.`;
+                    const payload = {
+                        contents: [{ role: "user", parts: [{ text: prompt }, { inlineData: { mimeType: "audio/wav", data: audioBase64 } }] }],
+                    };
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error?.message || `HTTP error! status: ${response.status}`);
+                    }
+                    const result = await response.json();
+                    if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
+                        const transcribedText = result.candidates[0].content.parts[0].text;
+                        setState({ narrationScript: transcribedText });
+                        narrationScript.value = transcribedText;
+                        setTranscriptionStatus("התמלול הושלם בהצלחה!", "success");
+                    } else {
+                        throw new Error("לא התקבל טקסט מה-API.");
+                    }
+                } catch (err) {
+                    console.error("Transcription error:", err);
+                    setTranscriptionStatus(`שגיאת תמלול: ${err.message}`, "error");
+                } finally {
+                    transcribeAudioButton.disabled = false;
+                }
+            };
+            reader.onerror = () => {
+                setTranscriptionStatus("שגיאה בקריאת הקובץ.", "error");
+                transcribeAudioButton.disabled = false;
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        function getBulletChar(style) {
+            switch (style) {
+                case 'dash': return '– ';
+                case 'star': return '★ ';
+                case 'circle': return '● ';
+                default: return '';
+            }
+        }
+
+        function renderNarrationText(text) {
+            const bulletChar = getBulletChar(appState.narrationBulletStyle);
+            const lines = text.split('\n');
+            let html = '';
+            lines.forEach(line => {
+                if (line.trim() === '') return;
+                
+                let lineContent = line;
+                if(line.startsWith('– ') || line.startsWith('★ ') || line.startsWith('● ')){
+                    // Line already has a bullet from manual input, respect it
+                } else if (bulletChar) {
+                    lineContent = `${bulletChar}${line}`;
+                }
+
+                const bannerSpan = appState.narrationShowBanner
+                    ? `<span class="line-banner">${lineContent}</span>`
+                    : `<span>${lineContent}</span>`;
+                html += `<span class="narration-line">${bannerSpan}</span>`;
+            });
+            narrationText.innerHTML = html;
+        }
+
+        function stopNarrationAnimation() {
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+            if (currentAudioPlayer) {
+                if (typeof currentAudioPlayer.pause === 'function') { // Real player
+                    currentAudioPlayer.pause();
+                    currentAudioPlayer.currentTime = 0;
+                } else if (currentAudioPlayer._intervalId) { // Mock player
+                    clearInterval(currentAudioPlayer._intervalId);
+                }
+                currentAudioPlayer = null;
+            }
+            
+            if (appState.isNarrationPlaying) {
+                 setState({ isNarrationPlaying: false });
+            }
+        }
+
+        function runNarrationAnimation() {
+            if (appState.isNarrationPlaying) return;
+            narrationText.innerHTML = ''; 
+            setState({ isNarrationPlaying: true });
+            
+            const file = narrationAudioFile.files[0];
+            if (file) {
+                currentAudioPlayer = new Audio();
+                currentAudioPlayer.src = URL.createObjectURL(file);
+                currentAudioPlayer.onended = stopNarrationAnimation;
+                currentAudioPlayer.onerror = () => {
+                    console.error("Audio playback error.");
+                    stopNarrationAnimation();
+                };
+                currentAudioPlayer.play().catch(e => {
+                    console.error("Audio play failed:", e);
+                    stopNarrationAnimation();
+                });
+                typewriterSyncAnimation(currentAudioPlayer);
+            } else {
+                const DUMMY_DURATION_PER_CHAR = 100;
+                const dummyDuration = appState.narrationScript.length * DUMMY_DURATION_PER_CHAR / 1000;
+                
+                const mockPlayer = {
+                    currentTime: 0,
+                    duration: dummyDuration > 0 ? dummyDuration : 1, 
+                    _intervalId: null,
+                    onended: stopNarrationAnimation
+                };
+                
+                currentAudioPlayer = mockPlayer;
+                
+                mockPlayer._intervalId = setInterval(() => {
+                    if (!currentAudioPlayer || !currentAudioPlayer._intervalId) {
+                       clearInterval(mockPlayer._intervalId);
+                       return;
+                    }
+
+                    mockPlayer.currentTime += 0.01;
+                    if (mockPlayer.currentTime >= mockPlayer.duration) {
+                         clearInterval(mockPlayer._intervalId);
+                         mockPlayer.currentTime = mockPlayer.duration;
+                         typewriterSyncAnimation(mockPlayer); 
+                         if(mockPlayer.onended) mockPlayer.onended();
+                    }
+                }, 10);
+
+                typewriterSyncAnimation(mockPlayer);
+            }
+        }
+
+        function typewriterSyncAnimation(audioPlayer) {
+            const script = appState.narrationScript;
+            const scriptLength = script.length;
+            
+            function animate() {
+                if (!currentAudioPlayer || !appState.isNarrationPlaying) {
+                    cancelAnimationFrame(animationFrameId);
+                    return;
+                }
+                
+                if (audioPlayer.duration > 0) {
+                    const progress = Math.min(audioPlayer.currentTime / audioPlayer.duration, 1);
+                    const charsToShow = Math.floor(progress * scriptLength);
+                    renderNarrationText(script.substring(0, charsToShow));
+                }
+                
+                animationFrameId = requestAnimationFrame(animate);
+            }
+            animationFrameId = requestAnimationFrame(animate);
+        }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        const saveStateToFirestore = debounce((state) => {
+            if (graphicStateRef) {
+                setDoc(graphicStateRef, state, { merge: true })
+                    .then(() => console.log("State saved to Firestore"))
+                    .catch(error => console.error("Error saving state: ", error));
+            }
+        }, 1000);
+
+        window.setState = (newState) => {
+            Object.assign(window.appState, newState);
+            if(currentMode === 'EDIT'){
+                 updateGraphic();
+            }
+            saveStateToFirestore(window.appState);
+        };
+        
+        
+        // --- App Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeDOMElements();
+            addEventListenersAfterDOM();
+            
+            const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "your-api-key", authDomain: "your-auth-domain", projectId: "your-project-id" };
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            const app = initializeApp(firebaseConfig);
+            const db = getFirestore(app);
+            const auth = getAuth(app);
+            
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    console.log("User is signed in with UID:", user.uid);
+                    userId = user.uid;
+                    graphicStateRef = doc(db, `artifacts/${appId}/users/${userId}/graphicState/currentState`);
+                    if (dbUnsubscribe) {
+                        dbUnsubscribe();
+                    }
+                    dbUnsubscribe = onSnapshot(graphicStateRef, (docSnap) => {
+                        if (docSnap.exists()) {
+                            console.log("Loaded data from Firestore. Updating UI.");
+                            const firestoreState = docSnap.data();
+                            Object.keys(firestoreState).forEach(key => {
+                                if (window.appState.hasOwnProperty(key)) {
+                                    const defaultValue = window.appState[key];
+                                    if (typeof defaultValue === 'number') {
+                                        firestoreState[key] = parseFloat(firestoreState[key]);
+                                    } else if (typeof defaultValue === 'boolean') {
+                                        firestoreState[key] = (firestoreState[key] === true || String(firestoreState[key]).toLowerCase() === 'true');
+                                    }
+                                }
+                            });
+                            Object.assign(window.appState, firestoreState);
+                        } else {
+                            console.log("No document in Firestore. Initializing with default state.");
+                            setDoc(graphicStateRef, window.appState)
+                                .catch(error => console.error("Error creating initial document: ", error));
+                        }
+                        setMode('EDIT');
+                    });
+                } else {
+                    console.log("User is signed out. Attempting to sign in...");
+                    try {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    } catch (error) {
+                        console.error("Error during sign-in:", error, "This is expected when running locally without a valid backend.");
+                         setMode('EDIT');
+                    }
+                }
+            });
+            showControlsBar(true); 
+
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({ type: 'iframeReady', templateId: 'TIMLOL_I24' }, '*');
+                console.log('TIMLOL_I24 template is ready and sent iframeReady message.');
+            }
+        });
+    </script>
+</body>
+</html>
