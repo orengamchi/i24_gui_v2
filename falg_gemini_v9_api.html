@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>סימולציית דגל תלת-ממדית - גרסה חלקה</title>
+    <style>
+        /* * סגנונות כלליים לדף
+         * General page styles
+         */
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            direction: rtl;
+            background-color: #121212;
+            overflow: hidden;
+            color: #e0e0e0;
+            cursor: default;
+        }
+        
+        /* * סרגל כלים עליון עם אנימציית הסתרה
+         * Top toolbar with hiding animation
+         */
+        #toolbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background-color: rgba(20, 20, 20, 0.98);
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            z-index: 1000;
+            height: auto;
+            flex-wrap: wrap;
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.3);
+            transition: transform 0.5s ease, opacity 0.5s ease;
+        }
+        
+        #toolbar.hidden {
+            transform: translateY(-100%);
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .tool-group {
+            display: flex;
+            align-items: center;
+            margin: 0 4px;
+            background-color: rgba(40, 40, 40, 0.6);
+            padding: 6px;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            transition: all 0.3s ease;
+        }
+        
+        .tool-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #2a2a2a, #1f1f1f);
+            border: none;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            margin: 0 4px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16);
+        }
+        
+        .tool-btn:hover {
+            background: linear-gradient(145deg, #3a3a3a, #2f2f2f);
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 5px 12px rgba(0, 0, 0, 0.25);
+        }
+        
+        .tool-btn.active {
+            background: linear-gradient(145deg, #388e3c, #2e7d32);
+            box-shadow: 0 0 0 3px rgba(56, 142, 60, 0.3);
+        }
+        
+        .tool-btn .icon {
+            width: 22px;
+            height: 22px;
+            display: block;
+            pointer-events: none;
+            filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3));
+            opacity: 0.9;
+            transition: transform 0.2s;
+        }
+        
+        .tool-btn:hover .icon {
+            transform: scale(1.1);
+        }
+
+        /* * עיצוב תיבת הבחירה של המדינות
+         * Styling for the country selector dropdown
+         */
+        #country-select {
+            background-color: #2a2a2a;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-size: 14px;
+            margin-right: 8px;
+            cursor: pointer;
+            max-width: 200px;
+        }
+        #country-select:hover {
+            border-color: #4caf50;
+        }
+        
+        /* * פאנל הגדרות צדדי
+         * Side settings panel
+         */
+        .settings-panel {
+            position: fixed;
+            top: 70px;
+            right: 15px;
+            background: rgba(30, 30, 30, 0.98);
+            border-radius: 12px;
+            padding: 18px;
+            width: 280px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.35);
+            z-index: 1001;
+            display: none;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            animation: fadeIn 0.3s ease-out;
+            transition: transform 0.5s ease, opacity 0.5s ease;
+        }
+        
+        .settings-panel.hidden {
+            transform: translateY(-20px);
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .panel-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 14px;
+            color: #4caf50;
+            display: flex;
+            align-items: center;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .control-group {
+            margin-bottom: 14px;
+        }
+        
+        .control-group label {
+            display: block;
+            font-size: 13px;
+            margin-bottom: 6px;
+            color: #b0b0b0;
+        }
+        
+        .control-group input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 4px;
+            background: #444;
+            outline: none;
+            -webkit-appearance: none;
+            transition: all 0.2s;
+        }
+        
+        .control-group input[type="range"]:hover {
+            background: #4a4a4a;
+        }
+        
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #4caf50;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .control-group input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 5px rgba(76, 175, 80, 0.8);
+        }
+        
+        .control-group input[type="color"] {
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            border: 2px solid #444;
+            border-radius: 50%;
+            cursor: pointer;
+            background: none;
+            transition: all 0.2s;
+        }
+        
+        .control-group input[type="color"]:hover {
+            transform: scale(1.1);
+            border-color: #555;
+        }
+        
+        #container {
+            width: 100vw;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+        }
+        
+        #status {
+            position: fixed;
+            bottom: 12px;
+            left: 12px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            font-family: 'Courier New', monospace;
+            transition: transform 0.5s ease, opacity 0.5s ease;
+        }
+        
+        #status.hidden {
+            transform: translateY(20px);
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        #fullscreen-btn {
+            position: fixed;
+            bottom: 12px;
+            right: 12px;
+            z-index: 1000;
+            background: rgba(40, 40, 40, 0.7);
+            border-radius: 50%;
+            width: 42px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: all 0.5s ease;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        #fullscreen-btn.hidden {
+            transform: translateY(20px);
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        #fullscreen-btn:hover {
+            background: rgba(60, 60, 60, 0.9);
+            transform: scale(1.1);
+        }
+        
+        #fullscreen-btn svg {
+            width: 22px;
+            height: 22px;
+        }
+        
+        #auto-hide-notice {
+            position: fixed;
+            bottom: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+        }
+        
+        #auto-hide-notice.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <!-- סרגל כלים -->
+    <div id="toolbar">
+        <div class="tool-group">
+            <select id="country-select" title="בחר דגל ממאגר אינטרנטי">
+                <option>טוען רשימת דגלים...</option>
+            </select>
+            <button class="tool-btn" id="load-flag-btn" title="טען קובץ מקומי">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 15v4c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2v-4M17 8l-5-5-5 5M12 3v10"/>
+                </svg>
+            </button>
+            <input type="file" id="flag-upload" accept="image/*" style="display: none;">
+        </div>
+        
+        <div class="tool-group">
+            <button class="tool-btn active" id="wind-btn" title="רוח וגלים">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"/>
+                </svg>
+            </button>
+        </div>
+        
+        <div class="tool-group">
+            <button class="tool-btn" id="camera-btn" title="מצלמה">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                    <circle cx="12" cy="13" r="4"/>
+                </svg>
+            </button>
+        </div>
+        
+        <div class="tool-group">
+            <button class="tool-btn" id="light-btn" title="תאורה">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0zm4-3h1m-7-4V3m5.293 4.707l1.414-1.414M12 12v1m0 7v1m-7-4h1m4.707-5.293l1.414 1.414"/>
+                </svg>
+            </button>
+        </div>
+        
+        <div class="tool-group">
+            <button class="tool-btn" id="material-btn" title="חומרים">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+    
+    <!-- פאנלים -->
+    <div class="settings-panel" id="wind-panel">
+        <div class="panel-title"><span style="flex-grow: 1;">רוח וגלים</span><button class="tool-btn" style="width: 28px; height: 28px; background: rgba(255,255,255,0.1);" onclick="closePanel('wind-panel')"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+        <div class="control-group"><label for="wind-strength">עוצמת רוח</label><input type="range" id="wind-strength" min="0" max="1" step="0.01" value="0.4"></div>
+        <div class="control-group"><label for="wind-direction">כיוון רוח</label><input type="range" id="wind-direction" min="-1" max="1" step="0.05" value="1"></div>
+        <div class="control-group"><label for="wave-speed">מהירות גלים</label><input type="range" id="wave-speed" min="0.1" max="3" step="0.1" value="1.2"></div>
+        <div class="control-group"><label for="fold-density">צפיפות קפלים</label><input type="range" id="fold-density" min="20" max="400" step="1" value="180"></div>
+    </div>
+    <div class="settings-panel" id="camera-panel">
+        <div class="panel-title"><span style="flex-grow: 1;">הגדרות מצלמה</span><button class="tool-btn" style="width: 28px; height: 28px; background: rgba(255,255,255,0.1);" onclick="closePanel('camera-panel')"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+        <div class="control-group"><label for="zoom-level">קירוב מצלמה</label><input type="range" id="zoom-level" min="0.5" max="10" step="0.1" value="1.6"></div>
+        <div class="control-group"><label for="cam-angle-x">זווית X</label><input type="range" id="cam-angle-x" min="-60" max="60" step="1" value="0"></div>
+        <div class="control-group"><label for="cam-angle-y">זווית Y</label><input type="range" id="cam-angle-y" min="-60" max="60" step="1" value="0"></div>
+    </div>
+    <div class="settings-panel" id="light-panel">
+        <div class="panel-title"><span style="flex-grow: 1;">הגדרות תאורה</span><button class="tool-btn" style="width: 28px; height: 28px; background: rgba(255,255,255,0.1);" onclick="closePanel('light-panel')"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+        <div class="control-group"><label for="light-intensity">עוצמת תאורה</label><input type="range" id="light-intensity" min="0" max="2" step="0.1" value="1.2"></div>
+        <div class="control-group"><label for="light-color">צבע תאורה</label><input type="color" id="light-color" value="#ffffff"></div>
+        <div class="control-group"><label for="light-x">מיקום X</label><input type="range" id="light-x" min="-5" max="5" step="0.1" value="1"></div>
+        <div class="control-group"><label for="light-y">מיקום Y</label><input type="range" id="light-y" min="-5" max="5" step="0.1" value="2"></div>
+        <div class="control-group"><label for="light-z">מיקום Z</label><input type="range" id="light-z" min="-5" max="5" step="0.1" value="3"></div>
+    </div>
+    <div class="settings-panel" id="material-panel">
+        <div class="panel-title"><span style="flex-grow: 1;">הגדרות חומרים</span><button class="tool-btn" style="width: 28px; height: 28px; background: rgba(255,255,255,0.1);" onclick="closePanel('material-panel')"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+        <div class="control-group"><label for="material-roughness">מחוספסות</label><input type="range" id="material-roughness" min="0" max="1" step="0.05" value="0.85"></div>
+        <div class="control-group"><label for="material-metalness">מתכתיות</label><input type="range" id="material-metalness" min="0" max="1" step="0.05" value="0.1"></div>
+        <div class="control-group"><label for="material-bump">עוצמת תבליט</label><input type="range" id="material-bump" min="0" max="0.1" step="0.001" value="0.007"></div>
+    </div>
+
+    <div id="container"></div>
+    <div id="status">FPS: 60 | קפלים: 40x20 | רוח: 0.30</div>
+    <div id="fullscreen-btn" title="מסך מלא"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg></div>
+    <div id="auto-hide-notice">הממשק יוסתר אוטומטית ללא פעילות</div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // --- הגדרת סצנת Three.js ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x121212);
+        
+        let camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        let cameraDistance = 1.6;
+        let cameraAngleX = 0;
+        let cameraAngleY = 0;
+        updateCameraPosition();
+
+        const renderer = new THREE.WebGLRenderer({ 
+            antialias: true,
+            powerPreference: "high-performance"
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.getElementById('container').appendChild(renderer.domElement);
+
+        const textureLoader = new THREE.TextureLoader();
+
+        // --- פרמטרים ואובייקטים של הדגל ---
+        let flagWidth = 3;
+        let flagHeight = 1.5;
+        let segmentsX, segmentsY;
+        
+        // --- חומר וגאומטריה ---
+        /**
+         * יוצר מפת תבליט (bump map) דינמית כדי לדמות טקסטורת בד.
+         * @returns {THREE.CanvasTexture} טקסטורה שניתן להשתמש בה במאפיין bumpMap של חומר.
+         */
+        function createFabricBumpMap() {
+            const size = 128;
+            const canvas = document.createElement('canvas');
+            canvas.width = canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.createImageData(size, size);
+            const data = imageData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                const value = 128 + Math.random() * 64; // רעש אקראי עדין
+                data[i] = data[i + 1] = data[i + 2] = value;
+                data[i + 3] = 255;
+            }
+            ctx.putImageData(imageData, 0, 0);
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(10, 5); // חזרה על הטקסטורה לקבלת פירוט גבוה
+            return texture;
+        }
+
+        let flagMaterial = new THREE.MeshStandardMaterial({
+            map: null,
+            side: THREE.DoubleSide,
+            roughness: 0.85, 
+            metalness: 0.1,
+            bumpMap: createFabricBumpMap(),
+            bumpScale: 0.007, // *** עוצמת תבליט הוקטנה ***
+        });
+        
+        let flag = new THREE.Mesh(undefined, flagMaterial);
+        flag.castShadow = true;
+        flag.receiveShadow = true;
+        scene.add(flag);
+
+        // --- הגדרות תאורה ---
+        const ambientLight = new THREE.AmbientLight(0xcccccc, 0.5);
+        scene.add(ambientLight);
+        
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(-5, 5, 5);
+        directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 2048;
+        directionalLight.shadow.mapSize.height = 2048;
+        scene.add(directionalLight);
+
+        // --- משתני סימולציה ---
+        let windStrength = 0.4;
+        let windDirection = 1;
+        let waveSpeed = 1.2;
+        let foldDensity = 180; // ערך התחלתי גבוה יותר לרשת חלקה
+        const clock = new THREE.Clock();
+        let lastFrameTime = 0;
+
+        // --- משתנים לניהול ממשק ---
+        let inactivityTimer;
+        const INACTIVITY_TIMEOUT = 7000;
+        let isUIVisible = true;
+        let mousePosition = { x: 0, y: 0 };
+        let activePanelId = null; // *** מעקב אחרי הפאנל הפעיל ***
+
+        function updateCameraPosition() {
+            const angleXRad = THREE.MathUtils.degToRad(cameraAngleX);
+            const angleYRad = THREE.MathUtils.degToRad(cameraAngleY);
+            camera.position.x = cameraDistance * Math.sin(angleYRad) * Math.cos(angleXRad);
+            camera.position.y = cameraDistance * Math.sin(angleXRad);
+            camera.position.z = cameraDistance * Math.cos(angleYRad) * Math.cos(angleXRad);
+            camera.lookAt(0, 0, 0);
+        }
+
+        function updateFlagDensity() {
+            segmentsX = Math.floor(foldDensity * 1.5);
+            segmentsY = Math.floor(foldDensity * 0.75);
+            const newGeometry = new THREE.PlaneGeometry(flagWidth, flagHeight, segmentsX, segmentsY);
+            if (flag.geometry) {
+                flag.geometry.dispose();
+            }
+            flag.geometry = newGeometry;
+            flagGeometry = newGeometry;
+        }
+
+        /**
+         * **** אלגוריתם גלים מתקדם ליצירת תנועה חלקה ומציאותית ("TurboSmooth") ****
+         * Advanced wave algorithm for smooth and realistic motion ("TurboSmooth" effect)
+         */
+        function simulateFlagWave() {
+            const positions = flagGeometry.attributes.position.array;
+            const time = clock.getElapsedTime() * waveSpeed;
+            
+            for (let i = 0; i < positions.length; i += 3) {
+                const x = positions[i];
+                const y = positions[i + 1];
+                const normalizedX = (x + flagWidth / 2) / flagWidth;
+
+                const wave1 = Math.sin(x * 2.0 - time) * 0.1;
+                const wave2 = Math.sin(x * 5.0 + y * 2.0 - time * 2.0) * 0.05;
+                const wave3 = Math.sin(y * 4.0 - time * 0.8) * 0.05;
+                const turbulence = Math.sin(x * 15.0 + y * 10.0 + time * 3.0) * 0.02;
+                let z = (wave1 + wave2 + wave3 + turbulence) * windStrength;
+                const falloff = Math.pow(normalizedX, 0.7);
+                positions[i + 2] = z * falloff * windDirection;
+            }
+
+            flagGeometry.attributes.position.needsUpdate = true;
+            flagGeometry.computeVertexNormals();
+        }
+
+
+        function animate(currentTime) {
+            requestAnimationFrame(animate);
+            const deltaTime = currentTime - lastFrameTime;
+            if (deltaTime < 16) return; // Cap at ~60 FPS
+            
+            simulateFlagWave();
+            renderer.render(scene, camera);
+            
+            const fps = Math.round(1000 / deltaTime);
+            document.getElementById('status').textContent = 
+                `FPS: ${fps} | קפלים: ${segmentsX}x${segmentsY} | רוח: ${windStrength.toFixed(2)}`;
+            
+            lastFrameTime = currentTime;
+        }
+
+        // --- לוגיקת טעינת דגלים ו-API ---
+        function loadFlagFromUrl(url) {
+            textureLoader.load(url, (texture) => {
+                texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+                texture.minFilter = THREE.LinearMipmapLinearFilter;
+                texture.magFilter = THREE.LinearFilter;
+                
+                if (flag.material.map) flag.material.map.dispose();
+                flag.material.map = texture;
+                flag.material.needsUpdate = true;
+            }, undefined, (err) => {
+                console.error('An error occurred while loading the texture.', err);
+            });
+        }
+        
+        async function fetchAndPopulateFlags() {
+            const select = document.getElementById('country-select');
+            const loadFlagBtn = document.getElementById('load-flag-btn');
+            const fileInput = document.getElementById('flag-upload');
+            
+            const toolGroup = select.parentElement;
+            
+            try {
+                const response = await fetch('https://restcountries.com/v3.1/all?fields=name,flags,cca2');
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const countries = await response.json();
+                
+                const newSelect = document.createElement('select');
+                newSelect.id = 'country-select';
+                newSelect.title = 'בחר דגל ממאגר אינטרנטי';
+                
+                countries.sort((a, b) => a.name.common.localeCompare(b.name.common));
+
+                countries.forEach(country => {
+                    const option = document.createElement('option');
+                    option.value = country.flags.png;
+                    option.textContent = country.name.common;
+                    option.dataset.cca2 = country.cca2;
+                    newSelect.appendChild(option);
+                });
+
+                if (select) {
+                    toolGroup.replaceChild(newSelect, select);
+                }
+
+                const israelOption = newSelect.querySelector('option[data-cca2="IL"]');
+                if (israelOption) {
+                    israelOption.selected = true;
+                    loadFlagFromUrl(israelOption.value);
+                } else if (newSelect.options.length > 0) {
+                    newSelect.options[0].selected = true;
+                    loadFlagFromUrl(newSelect.options[0].value);
+                }
+
+                newSelect.addEventListener('change', (e) => { loadFlagFromUrl(e.target.value); resetInactivityTimer(); });
+
+            } catch (error) {
+                console.error("Could not fetch flags:", error);
+                if (select) select.innerHTML = '<option>שגיאה בטעינת דגלים</option>';
+            }
+             
+            loadFlagBtn.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', loadFlagFromFile);
+        }
+        
+        function loadFlagFromFile() {
+            const file = document.getElementById('flag-upload').files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => loadFlagFromUrl(e.target.result);
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // *** ניהול פאנלים וממשק - לוגיקה משופרת ***
+        function openPanel(panelId) {
+            document.querySelectorAll('.settings-panel').forEach(p => { p.style.display = 'none'; });
+            document.getElementById(panelId).style.display = 'block';
+            
+            document.querySelectorAll('.tool-btn').forEach(b => { b.classList.remove('active'); });
+            document.getElementById(panelId.replace('-panel', '-btn'))?.classList.add('active');
+            
+            activePanelId = panelId;
+            resetInactivityTimer();
+        }
+
+        function closePanel(panelId) {
+            document.getElementById(panelId).style.display = 'none';
+            document.getElementById(panelId.replace('-panel', '-btn'))?.classList.remove('active');
+            activePanelId = null;
+            resetInactivityTimer();
+        }
+
+        function showUI() {
+            if (!isUIVisible) {
+                isUIVisible = true;
+                document.getElementById('toolbar').classList.remove('hidden');
+                if (activePanelId) {
+                    document.getElementById(activePanelId).classList.remove('hidden');
+                }
+                document.getElementById('status').classList.remove('hidden');
+                document.getElementById('fullscreen-btn').classList.remove('hidden');
+                showAutoHideNotice();
+            }
+            resetInactivityTimer();
+        }
+        
+        function hideUI() {
+            if (isUIVisible) {
+                isUIVisible = false;
+                document.getElementById('toolbar').classList.add('hidden');
+                if (activePanelId) {
+                    document.getElementById(activePanelId).classList.add('hidden');
+                }
+                document.getElementById('status').classList.add('hidden');
+                document.getElementById('fullscreen-btn').classList.add('hidden');
+            }
+        }
+        
+        function resetInactivityTimer() {
+            clearTimeout(inactivityTimer);
+            inactivityTimer = setTimeout(hideUI, INACTIVITY_TIMEOUT);
+        }
+        
+        function showAutoHideNotice() {
+            const notice = document.getElementById('auto-hide-notice');
+            notice.classList.add('show');
+            setTimeout(() => { notice.classList.remove('show'); }, 2000);
+        }
+
+        // --- מאזינים לאירועים ---
+        function setupEventListeners() {
+            const uiControls = {
+                'wind-btn': 'wind-panel', 'camera-btn': 'camera-panel', 
+                'light-btn': 'light-panel', 'material-btn': 'material-panel'
+            };
+
+            Object.entries(uiControls).forEach(([btnId, panelId]) => {
+                document.getElementById(btnId).addEventListener('click', () => {
+                    if (activePanelId === panelId) {
+                        closePanel(panelId);
+                    } else {
+                        openPanel(panelId);
+                    }
+                });
+            });
+
+            // Remove inline onclick and add here for consistency
+            document.querySelectorAll('.panel-title .tool-btn').forEach(btn => {
+                const panel = btn.closest('.settings-panel');
+                if (panel) {
+                    btn.addEventListener('click', () => closePanel(panel.id));
+                }
+            });
+
+            document.getElementById('wind-strength').addEventListener('input', e => { windStrength = parseFloat(e.target.value); resetInactivityTimer(); });
+            document.getElementById('wind-direction').addEventListener('input', e => { windDirection = parseFloat(e.target.value); resetInactivityTimer(); });
+            document.getElementById('wave-speed').addEventListener('input', e => { waveSpeed = parseFloat(e.target.value); resetInactivityTimer(); });
+            document.getElementById('fold-density').addEventListener('input', e => { foldDensity = parseFloat(e.target.value); updateFlagDensity(); resetInactivityTimer(); });
+            
+            document.getElementById('zoom-level').addEventListener('input', e => { cameraDistance = parseFloat(e.target.value); updateCameraPosition(); resetInactivityTimer(); });
+            document.getElementById('cam-angle-x').addEventListener('input', e => { cameraAngleX = parseFloat(e.target.value); updateCameraPosition(); resetInactivityTimer(); });
+            document.getElementById('cam-angle-y').addEventListener('input', e => { cameraAngleY = parseFloat(e.target.value); updateCameraPosition(); resetInactivityTimer(); });
+            document.getElementById('light-intensity').addEventListener('input', e => { directionalLight.intensity = parseFloat(e.target.value); resetInactivityTimer(); });
+            document.getElementById('light-color').addEventListener('input', e => { directionalLight.color.set(e.target.value); resetInactivityTimer(); });
+            document.getElementById('light-x').addEventListener('input', e => { directionalLight.position.x = parseFloat(e.target.value); resetInactivityTimer(); });
+            document.getElementById('light-y').addEventListener('input', e => { directionalLight.position.y = parseFloat(e.target.value); resetInactivityTimer(); });
+            document.getElementById('light-z').addEventListener('input', e => { directionalLight.position.z = parseFloat(e.target.value); resetInactivityTimer(); });
+            document.getElementById('material-roughness').addEventListener('input', e => { flag.material.roughness = parseFloat(e.target.value); resetInactivityTimer(); });
+            document.getElementById('material-metalness').addEventListener('input', e => { flag.material.metalness = parseFloat(e.target.value); resetInactivityTimer(); });
+            document.getElementById('material-bump').addEventListener('input', e => { flag.material.bumpScale = parseFloat(e.target.value); resetInactivityTimer(); });
+            
+            document.getElementById('fullscreen-btn').addEventListener('click', () => {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(err => console.error(`Error: ${err.message}`));
+                } else if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+                resetInactivityTimer();
+            });
+            
+            document.addEventListener('mousemove', e => {
+                const movement = Math.abs(e.clientX - mousePosition.x) + Math.abs(e.clientY - mousePosition.y);
+                if (movement > 5) showUI();
+                mousePosition = { x: e.clientX, y: e.clientY };
+            });
+            document.addEventListener('mousedown', showUI);
+            document.addEventListener('keydown', showUI);
+            
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                resetInactivityTimer();
+            });
+        }
+
+
+        // --- אתחול היישום ---
+        updateFlagDensity();
+        setupEventListeners();
+        openPanel('wind-panel'); // Set initial panel
+        resetInactivityTimer();
+        animate(0);
+        fetchAndPopulateFlags();
+    </script>
+</body>
+</html>
