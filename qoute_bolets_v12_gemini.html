@@ -1,0 +1,1560 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>תבנית גרפית עם הקטנת ריווח באנרים</title>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden; 
+            font-family: 'Heebo', sans-serif;
+            background-color: #1a1a2e; 
+            direction: rtl;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+        }
+
+        .top-controls-bar {
+            position: fixed; 
+            top:0; left:0; right:0;
+            background-color: rgba(40, 40, 65, 0.97); 
+            padding: 10px 15px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+            z-index: 1000; 
+            display: flex; 
+            align-items: center;
+            justify-content: space-between; 
+            gap: 10px; 
+            color: #e0e0e0; 
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+            transform: translateY(0);
+        }
+        .top-controls-bar.hidden-bar {
+            opacity: 0;
+            transform: translateY(-100%);
+            pointer-events: none;
+        }
+        .top-controls-bar h4 {
+            color: #e0e0e0;
+        }
+
+        .gradient-presets-panel-inline { display: flex; align-items: center; gap: 8px; }
+        .gradient-presets-panel-inline h4 { margin: 0; font-size: 14px; white-space: nowrap; }
+        .gradient-buttons-inline { display: flex; gap: 6px; }
+        .gradient-button {
+            width: 30px; height: 20px; border: 1px solid #555; border-radius:4px; cursor:pointer;
+            transition: transform 0.2s ease;
+        }
+        .gradient-button:hover { transform: scale(1.1); }
+
+        .icons-panel-inline { display: flex; align-items: center; gap: 6px; }
+        .icon-button {
+            background: none; 
+            border: 1px solid transparent; 
+            color: #e0e0e0; 
+            cursor: pointer; padding: 8px;
+            border-radius: 6px; transition: background-color 0.3s ease, border-color 0.3s ease;
+            display: flex; align-items: center; justify-content: center;
+            width: 38px; height: 38px; 
+            position: relative; 
+        }
+        .icon-button:hover { background-color: rgba(255,255,255,0.1); }
+        .icon-button.active { 
+            background-color: rgba(100, 220, 150, 0.2); 
+            border-color: #64dc96;
+            color: #64dc96;
+        }
+        .icon-button svg {
+            width: 20px; height: 20px; fill: currentColor;
+        }
+
+
+        .top-bar-slider-container {
+            display: none; 
+            align-items: center;
+            gap: 8px;
+            margin-left: 10px; 
+            padding: 5px 10px;
+            background-color: rgba(60,60,90,0.8); 
+            border-radius: 6px;
+        }
+        .top-bar-slider-container.visible-slider { 
+            display: flex;
+        }
+        .top-bar-slider-container label {
+            font-size: 13px;
+            color: #ccc; 
+            white-space: nowrap;
+        }
+        .top-bar-slider-container input[type="range"] {
+            width: 100px; 
+            height: 15px;
+        }
+        .top-bar-slider-container #maskOffsetValueDisplayTop {
+            font-size: 13px;
+            color: #bbb; 
+            min-width: 30px; 
+        }
+        
+        .mini-popup-controls { 
+            position: fixed; 
+            background-color: rgba(50, 50, 75, 0.9); 
+            border: 1px solid rgba(100, 100, 125, 0.85); 
+            backdrop-filter: blur(8px); 
+            -webkit-backdrop-filter: blur(8px); 
+            border-radius: 8px;
+            padding: 15px; box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+            z-index: 1001; min-width: 220px; 
+            display: none; 
+            color: #e0e0e0; 
+            cursor: grab; 
+        }
+        .mini-popup-controls.dragging {
+            cursor: grabbing;
+        }
+        .mini-popup-controls.visible { display: block; }
+        
+        #popupTitleBannerSettings {
+            min-width: 350px; 
+        }
+        #popupTitleBannerSettings .popup-section-title-control {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #555;
+        }
+        #popupTitleBannerSettings .popup-section-title-control:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        #popupTitleBannerSettings h5 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #b0c4de; 
+            font-size: 14px;
+        }
+        #popupTitleBannerSettings .banner-color-palette-popup {
+             display:flex; gap:5px; margin-top:8px; margin-bottom: 12px; justify-content: flex-start;
+        }
+        #popupTitleBannerSettings textarea { 
+            width: calc(100% - 18px);
+            min-height: 40px; 
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #777;
+            background-color: #333;
+            color: #e0e0e0;
+            font-size: 14px;
+            resize: vertical; 
+        }
+
+
+        .mini-popup-controls label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 13px; color: #ccc; }
+        .mini-popup-controls input[type="text"],
+        .mini-popup-controls input[type="file"],
+        .mini-popup-controls textarea, 
+        .mini-popup-controls select,
+        .mini-popup-controls input[type="range"],
+        .mini-popup-controls input[type="color"] { 
+            width: calc(100% - 22px); padding: 8px; 
+            border: 1px solid #777; 
+            background-color: #333; 
+            color: #e0e0e0; 
+            border-radius: 4px; margin-bottom: 10px; font-size: 14px;
+            box-sizing: border-box; 
+        }
+         .mini-popup-controls input[type="color"] {
+            height: 40px; 
+            padding: 4px; 
+        }
+        .mini-popup-controls input[type="checkbox"] { margin-right: 5px; vertical-align: middle; }
+        .mini-popup-controls button {
+            padding: 6px 12px; background-color: #007bff; color:white; border:none; border-radius:4px; cursor:pointer; margin-top:10px; font-size: 13px;
+        }
+        .mini-popup-controls button.cancel { background-color: #6c757d; margin-left: 5px;}
+        .mini-popup-controls button.danger { background-color: #dc3545; } 
+
+
+        #popupDisplayMediaSettings {
+            position: fixed; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%; max-width: 500px; max-height: 85vh; 
+            overflow-y: auto; 
+            background-color: rgba(50, 50, 75, 0.9); 
+            border: 1px solid rgba(100, 100, 125, 0.8); 
+            backdrop-filter: blur(8px); 
+            -webkit-backdrop-filter: blur(8px);
+            border-radius: 10px;
+            padding: 20px; box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            color: #e0e0e0;
+        }
+        #popupDisplayMediaSettings h4 { margin-top: 0; margin-bottom: 15px; color: #e0e0e0; border-bottom: 1px solid #555; padding-bottom: 10px;}
+        #popupDisplayMediaSettings .popup-section { margin-bottom: 20px; }
+        #popupDisplayMediaSettings hr { border: 0; border-top: 1px solid #555; margin: 20px 0; }
+        #popupDisplayMediaSettings .slider-container { margin-bottom: 10px; }
+        #popupDisplayMediaSettings .slider-container label { display: block; margin-bottom: 5px; font-size: 13px; color: #ccc;}
+        #popupDisplayMediaSettings .slider-container input[type="range"] { width: calc(100% - 70px); display: inline-block; vertical-align: middle;}
+        #popupDisplayMediaSettings .slider-container span { display: inline-block; width: 50px; text-align: right; font-size: 13px; vertical-align: middle; margin-right:10px; color: #bbb;}
+
+        .graphic-view-area {
+            flex-grow: 1; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px; 
+            box-sizing: border-box;
+            overflow: hidden; 
+            margin-top: 60px; 
+            transition: margin-top 0.5s ease-in-out; 
+        }
+        .graphic-view-area.full-view-active { 
+            margin-top: 0;
+        }
+
+        .tv-graphic-container {
+            width: 100%; 
+            height: 100%;
+            aspect-ratio: 16 / 9; 
+            max-width: calc((100vh - 60px - 40px) * (16 / 9)); 
+            max-height: calc(100vh - 60px - 40px); 
+            position: relative; 
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            background-color: #000; 
+            transition: max-width 0.5s ease-in-out, max-height 0.5s ease-in-out; 
+        }
+        .graphic-view-area.full-view-active .tv-graphic-container {
+            max-width: calc(100vh * (16 / 9) - 40px * (16/9)); 
+            max-height: calc(100vh - 40px); 
+        }
+
+
+        .graphic-content-wrapper { 
+            display: flex; width: 100%; height: 100%; direction: rtl;
+            background: linear-gradient(135deg, #000033 0%, #190061 60%, #38006b 100%); 
+            position: relative; overflow: hidden; 
+        }
+         .glow-effect-shared { 
+            position: absolute; top: 50%; left: 50%; width: 10px; height: 250%;
+            background: white; opacity: 0;
+            box-shadow: 0 0 25px 10px rgba(200, 220, 255, 0.6); 
+            transform-origin: center center; animation: diagonalShineShared 8s ease-in-out infinite;
+            z-index: 0; 
+        }
+        @keyframes diagonalShineShared {
+            0% { transform: translate(-50%, -50%) rotate(45deg) translateY(-125%); opacity: 0.05; }
+            50% { transform: translate(-50%, -50%) rotate(45deg) translateY(0%); opacity: 0.15; }
+            100% { transform: translate(-50%, -50%) rotate(45deg) translateY(125%); opacity: 0.05; }
+        }
+        .full-screen-bg-image-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-size: cover; 
+            z-index: 0; opacity: 1; 
+        }
+
+        .image-panel {
+            flex-basis: 33.33%; background-color: transparent;
+            background-size: var(--image-panel-bg-size, cover); 
+            background-position: var(--image-panel-bg-pos-x, 50%) var(--image-panel-bg-pos-y, 50%);
+            background-repeat: no-repeat;
+            position: relative; display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; 
+            transition: clip-path 0.8s cubic-bezier(0.25, 0.1, 0.25, 1); 
+            cursor: pointer; z-index: 2; 
+            clip-path: polygon(0% 0%, 0% 0%, 0% 100%, 0% 100%); 
+        }
+        .image-panel.animate-mask-in {
+            clip-path: polygon(0% 0%, 100% 0%, calc(100% - var(--mask-offset, 5vw)) 100%, 0% 100%);
+        }
+
+        .image-panel.hidden { display: none; }
+        .image-panel:hover .edit-icon-overlay { opacity: 1; }
+        .image-panel.dragover { background-color: rgba(42, 42, 42, 0.5); border: 3px dashed #007bff; }
+        .image-panel video { width: 100%; height: 100%; object-fit: var(--image-panel-bg-size, cover); }
+        
+        .disclaimer-container {
+            position: absolute; bottom: 10px; left: 10px; 
+            width: calc(100% - 20px); text-align: left; z-index: 5; 
+        }
+        .disclaimer-text {
+            font-size: 1.2vw; color: rgba(255, 255, 255, 0.8); 
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+            padding: 5px; display: inline-block; position: relative; 
+        }
+        .disclaimer-text:hover .edit-icon { opacity: 1; }
+
+        .content-panel {
+            flex-basis: 66.67%; position: relative;
+            padding: 3vw 4vw; box-sizing: border-box;
+            display: flex; flex-direction: column; justify-content: center;
+            color: white; overflow: hidden; 
+            background-color: transparent; z-index: 2; 
+        }
+        .content-panel.full-width { flex-basis: 100%; }
+        
+        .text-overlay { 
+            position: relative; z-index: 2; text-align: right;
+            transform: translateY(-40px); 
+        }
+        .text-line-bg-wrapper { 
+            position: relative; 
+            display:inline-block; 
+        }
+        .main-title .text-line-bg-wrapper { 
+             position: relative; 
+             display: block; 
+        }
+         .sub-title .text-line-bg-wrapper { 
+             position: relative; 
+        }
+        .main-title .text-line-bg-wrapper:hover .edit-icon,
+        .sub-title .text-line-bg-wrapper:hover .edit-icon,
+        .info-box:hover .edit-icon, 
+        .disclaimer-text:hover .edit-icon { opacity: 1; }
+
+
+        .edit-icon, .edit-icon-overlay {
+            position: absolute; top: 0px; left: -25px; 
+            background-color: rgba(0,0,0,0.6); color: white;
+            border-radius: 50%; width: 20px; height: 20px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; opacity: 0; transition: opacity 0.3s ease;
+            z-index: 10;
+        }
+        .disclaimer-text .edit-icon { 
+            top: 50%; left: -25px; transform: translateY(-50%);
+        }
+        .edit-icon-overlay { 
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 40px; height: 40px; font-size:20px;
+        }
+        .edit-icon svg, .edit-icon-overlay svg { width: 12px; height: 12px; fill: white;}
+        .edit-icon-overlay svg { width: 20px; height: 20px;}
+        
+        .color-swatch { width: 25px; height: 25px; border-radius: 4px; cursor: pointer; border: 1px solid #ccc; box-shadow: 0 0 3px rgba(0,0,0,0.1); transition: transform 0.2s;}
+        .color-swatch:hover {transform: scale(1.1);}
+
+
+        .text-line-bg {
+            padding: 0.015em 0.35em; /* Halved vertical padding */
+            margin: 0.05em 0;
+            display: inline; 
+            box-decoration-break: clone; -webkit-box-decoration-break: clone;
+        }
+        .main-title, .sub-title, .info-box, .disclaimer-text { 
+            opacity: 0; 
+        }
+        .main-title {
+            font-weight: 900; font-size: 5.175vw; 
+            line-height: 1.25; 
+            margin-bottom: 0.6em; 
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            position: relative; 
+        }
+        .sub-title {
+            font-weight: 700; font-size: 3.1625vw; 
+            line-height: 1.3; margin-bottom: 1em; text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+            position: relative; 
+        }
+        .info-box {
+            background-color: transparent; 
+            padding: 1.5vw; border-radius: 8px; margin-top: 1.5vw; 
+            font-size: var(--infoBox-font-size, 3vw); 
+            line-height: 1.3; 
+            color: #ffffff; position: relative; 
+        }
+
+        .info-box-text-content ul { 
+            padding-right: 0; margin: 0; list-style-type: none; 
+            counter-reset: bullet-counter; 
+        }
+        .info-box-text-content li { 
+            margin-bottom: 0.2em; 
+            position: relative; 
+            padding-right: 2.9em; 
+            line-height: 1.4; 
+        }
+        .info-box-text-content li::before { 
+            content: ""; 
+            position: absolute; 
+            right: 0.8em; 
+            top: 50%; 
+            transform: translateY(-50%) rotate(-45deg); 
+            width: 1.3em;  
+            height: 0.6em;   
+            background-color: var(--bullet-color, red); 
+            transform-origin: center; 
+            border: none;
+            border-radius: 0;
+        }
+        .info-box-text-content li.bullet-star::before {
+            content: "\2605"; 
+            background-color: transparent;
+            transform: translateY(-50%);
+            width: auto; height: auto;
+            font-size: 1.2em; 
+            top: 50%; 
+            right: 0.8em; 
+             color: var(--bullet-color, red);
+        }
+        .info-box-text-content li.bullet-circle::before {
+            content: ""; 
+            background-color: var(--bullet-color, red);
+            width: 0.7em; height: 0.7em; 
+            border-radius: 50%;
+            transform: translateY(-50%);
+            top: 50%; 
+            right: 0.9em; 
+        }
+        .info-box-text-content li.bullet-number::before {
+            content: counter(bullet-counter) ".";
+            counter-increment: bullet-counter;
+            background-color: transparent;
+            transform: translateY(-50%);
+            width: auto; height: auto;
+            font-size: 0.9em; 
+            top: 50%; 
+            right: 0.8em; 
+            color: var(--bullet-color, red);
+        }
+
+        .info-box-text-content .quote-source {
+            display: block; font-size: 0.6em; 
+            font-style: italic; color: #ccc;
+            margin-top: 0.5em; text-align: left;
+        }
+
+        #inlineEditor {
+            display:none; 
+            position:fixed; 
+            z-index:1002; 
+            background: rgba(50, 50, 75, 0.9); 
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border:1px solid rgba(100, 100, 125, 0.85); 
+            padding:20px; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3); border-radius: 8px;
+            width: 380px; 
+            max-height: 90vh;
+            overflow-y: auto;
+            color: #e0e0e0;
+        }
+        #inlineEditor textarea { width: calc(100% - 18px); margin-bottom:10px; padding:8px; border-radius:4px; border:1px solid #777; background-color: #333; color: #e0e0e0; min-height: 60px;}
+        #inlineEditor label { font-size: 14px; margin-bottom: 8px; display: block; color: #ccc; font-weight:600;}
+        #inlineEditor select, #inlineEditor input[type="text"], #inlineEditor input[type="range"], #inlineEditor input[type="color"] { 
+            width: calc(100% - 18px); margin-bottom:10px; padding:8px; border-radius:4px; border:1px solid #777; background-color: #333; color: #e0e0e0;
+            box-sizing: border-box;
+        }
+         #inlineEditor input[type="color"] {
+            height: 35px; padding: 2px;
+        }
+        #inlineEditor input[type="checkbox"] { margin-left: 5px; vertical-align: middle; }
+        #inlineEditor button { font-size: 14px; padding: 8px 15px; }
+        #inlineEditor .banner-color-palette-inline-editor { display:flex; gap:5px; margin-top:8px; margin-bottom: 12px; justify-content: flex-start;}
+        #inlineEditor .control-group-editor { margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #555;}
+        #inlineEditor .control-group-editor:last-child { border-bottom: none; }
+        #inlineEditor .banner-options { margin-top: 5px; } 
+        #inlineEditorInfoBoxBulletStyleControls { display: none; } 
+
+
+        .anim-fade-in { opacity:0; animation: fadeIn 1s ease-out forwards; }
+        .anim-slide-in-right { opacity:0; animation: slideInRight 0.8s ease-out forwards; }
+        .anim-slide-in-left { opacity:0; animation: slideInLeft 0.8s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideInRight { from { opacity: 0; transform: translateX(-50px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes slideInLeft { from { opacity: 0; transform: translateX(50px); } to { opacity: 1; transform: translateX(0); } }
+
+        @media (max-width: 900px) {
+            .top-controls-bar { flex-wrap: wrap; justify-content: center; }
+            .gradient-presets-panel-inline { width: 100%; justify-content: center; margin-bottom: 5px;}
+            .top-bar-slider-container { width: 100%; justify-content: center; margin-left:0; margin-top: 5px;}
+            .disclaimer-text { font-size: 1.5vw; }
+            .graphic-view-area { padding: 10px; margin-top: 100px; }
+            .graphic-view-area.full-view-active { margin-top: 0; }
+            .tv-graphic-container { max-width: calc((100vh - 100px - 20px) * (16 / 9)); max-height: calc(100vh - 100px - 20px); }
+            .graphic-view-area.full-view-active .tv-graphic-container {
+                 max-width: calc(100vh * (16 / 9) - 20px * (16/9)); 
+                 max-height: calc(100vh - 20px);
+            }
+        }
+        @media (max-width: 768px) {
+            .main-title { font-size: 6.9vw; } 
+            .sub-title { font-size: 5.06vw; } 
+            .info-box { font-size: 4vw; }
+            .disclaimer-text { font-size: 2vw; }
+            .info-box-text-content li::before { top: 0.4em; width: 11px; height: 3.3px;} 
+            .edit-icon { left: -22px; width:18px; height:18px;}
+            .edit-icon svg {width:10px; height:10px;}
+            #inlineEditor { width: calc(100% - 40px); }
+            #popupDisplayMediaSettings { width: calc(100% - 30px); max-height: 85vh; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="top-controls-bar" id="topControlsBar">
+            <div class="gradient-presets-panel-inline">
+                <h4>רקע:</h4>
+                <div class="gradient-buttons-inline">
+                    <div class="gradient-button" style="background: linear-gradient(135deg, #080321, #190061, #38006b);" data-gradient="linear-gradient(135deg, #080321 0%, #190061 60%, #38006b 100%)"></div>
+                    <div class="gradient-button" style="background: linear-gradient(135deg, #000033, #1A0033, #330033);" data-gradient="linear-gradient(135deg, #000033, #1A0033, #330033)"></div>
+                    <div class="gradient-button" style="background: linear-gradient(135deg, #0d0221, #00002c, #240046);" data-gradient="linear-gradient(135deg, #0d0221, #00002c, #240046)"></div>
+                    <div class="gradient-button" style="background: linear-gradient(135deg, #140152, #2c007a, #5f0a87);" data-gradient="linear-gradient(135deg, #140152, #2c007a, #5f0a87)"></div>
+                    <div class="gradient-button" style="background: linear-gradient(135deg, #23074d, #cc5333);" data-gradient="linear-gradient(135deg, #23074d, #cc5333)"></div> 
+                    <div class="gradient-button" style="background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);" data-gradient="linear-gradient(135deg, #0f0c29, #302b63, #24243e)"></div> 
+                </div>
+            </div>
+            <div class="icons-panel-inline">
+                <button class="icon-button" id="iconCtrlDisplayMedia" title="הגדרות תצוגה ומדיה"> 
+                    <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93s3.05-7.44 7-7.93v15.86zm2-15.86c1.03.13 2 .45 2.87.93L15.87 7H14V4.07zm0 4.06H15.87L13.13 11H14V8.13zm0 4.07H15.87L13.13 15H14v-2.8zm0 4.06H15.87L13.13 19H14v-2.8zM18.87 5.13C18 4.45 17.03 4.13 16 4.07V7h2.87L18.87 5.13zM16 8.13V11h2.87L16 8.13zm0 4.07V15h2.87L16 12.2zm2.87 5.74c-.87.48-1.84.8-2.87.93V17h2.87l0 .01.01-.01z"/></svg>
+                </button>
+                <button class="icon-button" id="iconCtrlTitleBannerSettings" title="הגדרות כותרות ובאנרים">
+                     <svg viewBox="0 0 24 24"><path d="M5 4v3h5.5v12h3V7H19V4H5z"/></svg> 
+                </button>
+                <div class="top-bar-slider-container" id="topBarMaskSliderContainer">
+                    <label for="inputMaskOffsetTopBar">מסכה:</label>
+                    <input type="range" id="inputMaskOffsetTopBar" min="0" max="15" value="5" step="0.5">
+                    <span id="maskOffsetValueDisplayTop">5vw</span>
+                </div>
+                <button class="icon-button" id="iconCtrlAnimation" title="אנימציות">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4l1.41 1.41L7.83 11H20v2H7.83l5.58 5.59L12 20l-8-8 8-8z"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="graphic-view-area" id="graphicViewArea">
+            <div class="tv-graphic-container">
+                <div class="graphic-content-wrapper" id="graphicWrapperDisplay">
+                    <div class="full-screen-bg-image-container" id="fullScreenBgContainer"></div>
+                    <div class="glow-effect-shared"></div>
+                    <div class="content-panel" id="contentPanelDisplay">
+                        <div class="text-overlay">
+                            <h1 class="main-title" id="mainTitleDisplay">
+                                <span class="text-line-bg-wrapper" data-text-type="mainTitle" data-banner-color-name="yellow">כותרת ראשית מודגשת</span>
+                                <span class="edit-icon" onclick="editTextElement(mainTitleWrapper)">
+                                    <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                                </span>
+                            </h1>
+                            <h2 class="sub-title" id="subTitleDisplay">
+                                <span class="text-line-bg-wrapper" data-text-type="subTitle" data-banner-color-name="yellow">כותרת משנה עם הסבר נוסף</span>
+                                <span class="edit-icon" onclick="editTextElement(subTitleWrapper)">
+                                    <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                                </span>
+                            </h2>
+                            <div class="info-box" id="infoBoxDisplay">
+                                <div class="info-box-text-content" id="infoBoxTextContent" data-text-type="infoBox">טקסט לדוגמה בחלונית המידע.\n+ עוד נקודה חשובה.\n+ ונקודה אחרונה.\n+ נקודה נוספת.\n+ ועוד אחת לסיום.</div>
+                                <span class="edit-icon" onclick="editTextElement(infoBoxTextContentElement)">
+                                    <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="image-panel" id="imagePanelDisplay">
+                        <div class="edit-icon-overlay" onclick="openPopup('popupDisplayMediaSettings')"> 
+                            <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                        </div>
+                        <div class="disclaimer-container">
+                            <span class="disclaimer-text" id="disclaimerTextDisplay" data-text-type="disclaimer">דיסקליימר ברירת מחדל</span>
+                            <span class="edit-icon" onclick="editTextElement(disclaimerTextDisplay)">
+                                <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mini-popup-controls" id="popupTitleBannerSettings">
+            <h4>הגדרות כותרות ובאנרים</h4>
+            <div class="popup-section-title-control">
+                <h5>כותרת ראשית</h5>
+                <label for="popupMainTitleText">טקסט כותרת ראשית:</label>
+                <textarea id="popupMainTitleText" rows="2"></textarea>
+                <label><input type="checkbox" id="chkMainTitleBanner"> הצג באנר</label>
+                <div class="banner-color-palette-popup" id="mainTitleBannerColorPalette"></div>
+                <label><input type="checkbox" id="chkMainTitleBannerRounded"> פינות מעוגלות</label>
+            </div>
+            <div class="popup-section-title-control">
+                <h5>כותרת משנה</h5>
+                <label for="popupSubTitleText">טקסט כותרת משנה:</label>
+                <textarea id="popupSubTitleText" rows="2"></textarea>
+                <label><input type="checkbox" id="chkSubTitleBanner"> הצג באנר</label>
+                <div class="banner-color-palette-popup" id="subTitleBannerColorPalette"></div>
+                <label><input type="checkbox" id="chkSubTitleBannerRounded"> פינות מעוגלות</label>
+            </div>
+            <button class="cancel" onclick="closePopup('popupTitleBannerSettings')" style="margin-top:15px; float:left;">סגור</button>
+        </div>
+
+
+        <div class="mini-popup-controls" id="popupDisplayMediaSettings" style="min-width: 400px;"> 
+            <div class="popup-section" id="layoutOptionsSection">
+                <h4>אפשרויות פריסה כלליות</h4>
+                <label><input type="checkbox" id="chkShowImagePanel"> הצג פאנל תמונה (שליש מסך)</label>
+                <hr>
+                <label for="inputFullScreenBgUrl">תמונת רקע מלאה (URL):</label>
+                <input type="text" id="inputFullScreenBgUrl" placeholder="הדבק קישור לתמונה">
+                <label for="inputFileFullScreenBg">או העלה קובץ רקע מלא:</label>
+                <input type="file" id="inputFileFullScreenBg" accept="image/*">
+                
+                <div class="slider-container">
+                    <label for="inputFullScreenBgOpacity">שקיפות רקע מלא:</label>
+                    <input type="range" id="inputFullScreenBgOpacity" min="0" max="1" value="1" step="0.01">
+                    <span id="fullScreenBgOpacityValueDisplay">100%</span>
+                </div>
+
+                <div class="slider-container">
+                    <label for="inputFullScreenBgPosX">מיקום אופקי של רקע מלא:</label>
+                    <input type="range" id="inputFullScreenBgPosX" min="-50" max="150" value="50" step="1"> <span id="fullScreenBgPosXValueDisplay">50%</span>
+                </div>
+                <div class="slider-container">
+                    <label for="inputFullScreenBgPosY">מיקום אנכי של רקע מלא:</label>
+                    <input type="range" id="inputFullScreenBgPosY" min="0" max="100" value="50" step="1">
+                    <span id="fullScreenBgPosYValueDisplay">50%</span>
+                </div>
+                <button id="btnRemoveFullScreenBg" class="danger" style="width:100%; margin-top:10px;">הסר תמונת רקע מלאה</button>
+            </div>
+            <hr>
+            <div class="popup-section" id="panelMediaControlsSection">
+                <h4>מדיה (פאנל שליש)</h4>
+                <label for="inputMediaUrl">קישור למדיה:</label>
+                <input type="text" id="inputMediaUrl" placeholder="הדבק קישור או השאר ריק להעלאה">
+                <label for="inputFileMedia">או העלה קובץ:</label>
+                <input type="file" id="inputFileMedia" accept="image/*,video/*">
+                <hr>
+                <label for="selectPanelImageSize">גודל תמונה בפאנל:</label>
+                <select id="selectPanelImageSize">
+                    <option value="cover">כיסוי (Cover)</option>
+                    <option value="contain">הכלה (Contain)</option>
+                    <option value="100% 100%">מתיחה (Stretch)</option>
+                    <option value="auto">אוטומטי (Auto)</option>
+                </select>
+                <div class="slider-container"> <label for="inputPanelImagePosX">מיקום X (%):</label>
+                    <input type="range" id="inputPanelImagePosX" min="0" max="100" value="50" step="1">
+                    <span id="panelImagePosXValueDisplay">50%</span>
+                </div>
+                <div class="slider-container"> <label for="inputPanelImagePosY">מיקום Y (%):</label>
+                    <input type="range" id="inputPanelImagePosY" min="0" max="100" value="50" step="1">
+                    <span id="panelImagePosYValueDisplay">50%</span>
+                </div>
+            </div>
+            <button onclick="applyDisplayMediaOptions()">החל שינויי תצוגה ומדיה</button>
+            <button class="cancel" onclick="closePopup('popupDisplayMediaSettings')">סגור</button>
+        </div>
+
+        <div class="mini-popup-controls" id="popupCtrlAnimation">
+            <label for="selectEntryAnimation">אנימציית כניסה:</label>
+            <select id="selectEntryAnimation">
+                <option value="none">ללא</option>
+                <option value="anim-fade-in">Fade In</option>
+                <option value="anim-slide-in-right">Slide In Right</option>
+                <option value="anim-slide-in-left">Slide In Left</option>
+            </select>
+            <button class="cancel" onclick="closePopup('popupCtrlAnimation')">סגור</button>
+        </div>
+
+        <div id="inlineEditor" class="mini-popup-controls"> <label for="inlineEditTextarea" id="inlineEditorLabel">ערוך טקסט:</label>
+            <textarea id="inlineEditTextarea" rows="3"></textarea>
+            
+            <div id="inlineEditorBannerControls" style="display:none;" class="control-group-editor">
+                </div>
+
+            <div id="inlineEditorInfoBoxTypeControls" style="margin-top:10px; display:none;" class="control-group-editor">
+                <label for="inlineEditorInfoTypeSelect">סוג תוכן עיקרי:</label>
+                <select id="inlineEditorInfoTypeSelect">
+                    <option value="text">טקסט רגיל</option>
+                    <option value="bullets">כותרות בנקודות</option> 
+                </select>
+                </div>
+            
+            <div id="inlineEditorInfoBoxBulletStyleControls" style="display:none;" class="control-group-editor">
+                <label for="inlineEditorBulletShapeSelect">סגנון נקודות:</label>
+                <select id="inlineEditorBulletShapeSelect">
+                    <option value="default">ברירת מחדל (קו נטוי)</option>
+                    <option value="star">כוכבית</option>
+                    <option value="circle">עיגול</option>
+                    <option value="number">מספור (1-5)</option>
+                </select>
+                <label for="inlineEditorBulletColorInput" style="margin-top: 10px;">צבע נקודות:</label>
+                <input type="color" id="inlineEditorBulletColorInput" value="#FF0000"> </div>
+
+            <div id="inlineEditorInfoBoxFontControls" style="margin-top:10px; display:none;" class="control-group-editor">
+                <label for="inlineEditorInfoBoxFontSize">גודל פונט תוכן עיקרי (<span id="infoBoxFontSizeValueDisplay">3</span>vw):</label>
+                <input type="range" id="inlineEditorInfoBoxFontSize" min="1" max="6" value="3" step="0.1">
+            </div>
+            <div style="margin-top:15px; text-align:left;">
+                <button onclick="saveInlineEdit()">סגור</button> 
+                <button class="cancel" onclick="cancelInlineEdit()">בטל</button>
+            </div>
+        </div>
+    </div> <script>
+        // DOM Elements
+        let imagePanelDisplay, contentPanelDisplay, mainTitleDisplayElement, mainTitleWrapper,
+            subTitleDisplayElement, subTitleWrapper, infoBoxDisplayElement, infoBoxTextContentElement,
+            disclaimerTextDisplay, graphicWrapperDisplay, fullScreenBgContainer, topControlsBar,
+            graphicViewArea, 
+            popupDisplayMediaSettings, chkShowImagePanel, inputFullScreenBgUrl, inputFileFullScreenBg,
+            inputFullScreenBgOpacity, fullScreenBgOpacityValueDisplay, 
+            inputFullScreenBgPosX, fullScreenBgPosXValueDisplay, 
+            inputFullScreenBgPosY, fullScreenBgPosYValueDisplay, 
+            btnRemoveFullScreenBg, 
+            inputMediaUrl, inputFileMedia,
+            selectPanelImageSize, 
+            inputPanelImagePosX, panelImagePosXValueDisplay, 
+            inputPanelImagePosY, panelImagePosYValueDisplay, 
+            panelMediaControlsSection,
+            inputMaskOffsetTopBar, maskOffsetValueDisplayTop, selectEntryAnimationGlobal,
+            inlineEditor, inlineEditorLabel, inlineEditTextarea, 
+            inlineEditorBannerControls, 
+            inlineEditorInfoBoxTypeControls, inlineEditorInfoTypeSelect, 
+            inlineEditorInfoBoxFontControls, inlineEditorInfoBoxFontSize, infoBoxFontSizeValueDisplay,
+            iconCtrlTitleBannerSettings, popupTitleBannerSettings,
+            chkMainTitleBanner, mainTitleBannerColorPaletteElement, chkMainTitleBannerRounded, popupMainTitleText,
+            chkSubTitleBanner, subTitleBannerColorPaletteElement, chkSubTitleBannerRounded, popupSubTitleText,
+            inlineEditorInfoBoxBulletStyleControls, inlineEditorBulletShapeSelect, inlineEditorBulletColorInput;
+
+
+        const svgIconEyeOpen = `<svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>`;
+        const svgIconEyeClosed = `<svg viewBox="0 0 24 24"><path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.44-4.75C20.27 7.61 16 4.5 12 4.5c-1.6 0-3.14.35-4.54.96l1.51 1.51C9.74 7.13 10.82 7 12 7zm-1.07 1.14L13 10.21c.04-.15.07-.3.07-.46 0-1.66-1.34-3-3-3-.16 0-.31.03-.46.07L7.93 5.46C9.19 5.03 10.55 4.85 12 4.85c3.03 0 5.79 1.51 7.5 3.94-.61.99-1.38 1.84-2.28 2.55L13 15.56c.91-.41 1.69-1.03 2.27-1.81.99-1.32 1.73-2.83 1.73-4.75 0-2.76-2.24-5-5-5-.75 0-1.45.17-2.09.46zM2.71 3.27L1.44 4.54l2.05 2.05C2.06 7.62 1.04 8.88.02 10.23c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.93.93L19.46 21l1.27-1.27L2.71 3.27zM12 17.15c-2.26 0-4.29-.96-5.88-2.58.9-.95 1.96-1.72 3.16-2.28l1.57 1.57c-.01.16-.05.31-.05.48 0 1.66 1.34 3 3 3 .17 0 .32-.04.48-.05l1.57 1.57c-.72.49-1.53.84-2.38.99z"/></svg>`;
+        const svgIconSquare = `<svg viewBox="0 0 24 24"><path d="M3 3v18h18V3H3zm16 16H5V5h14v14z"/></svg>`;
+        const svgIconRoundedSquare = `<svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 18H4V4h16v16z"/></svg>`;
+
+
+        const bannerColorOptions = {
+            yellow: { bg: 'rgba(255, 193, 7, 0.85)', text: '#001f3f' },
+            white: { bg: 'rgba(255, 255, 255, 0.85)', text: '#111111' },
+            darkblue: { bg: 'rgba(0, 31, 63, 0.85)', text: '#ffffff' },
+            red: { bg: 'rgba(220, 53, 69, 0.85)', text: '#ffffff' },
+            none: { bg: 'transparent', text: 'inherit' } 
+        };
+
+        let appState = {
+            mainTitle: "כותרת ראשית מודגשת", 
+            mainTitleBanner: true,
+            mainTitleBannerColorName: "yellow", 
+            mainTitleBannerRounded: true, 
+            subTitle: "כותרת משנה עם הסבר נוסף",
+            subTitleBanner: true,
+            subTitleBannerColorName: "yellow", 
+            subTitleBannerRounded: false, 
+            infoBoxText: "טקסט לדוגמה בחלונית המידע.\n+ עוד נקודה חשובה.\n+ ונקודה אחרונה.\n+ נקודה נוספת.\n+ ועוד אחת לסיום.",
+            infoBoxType: "bullets", 
+            infoBoxFontSize: "3", 
+            infoBoxBulletStyle: "default", 
+            infoBoxBulletColor: "#FF0000", 
+            disclaimerText: "דיסקליימר ברירת מחדל",
+            mediaUrl: "", 
+            mediaFile: null, 
+            panelImageSize: "cover",
+            panelImagePosX: "50",
+            panelImagePosY: "50",
+            maskOffset: "5",
+            entryAnimation: "anim-fade-in",
+            gradient: "linear-gradient(135deg, #080321 0%, #190061 60%, #38006b 100%)",
+            showImagePanel: true,
+            fullScreenBgUrl: "",
+            fullScreenBgFile: null,
+            fullScreenBgOpacity: 1,
+            fullScreenBgPosX: "50", 
+            fullScreenBgPosY: "50"  
+        };
+        
+        function initializeDOMElements() {
+            imagePanelDisplay = document.getElementById('imagePanelDisplay');
+            contentPanelDisplay = document.getElementById('contentPanelDisplay');
+            mainTitleDisplayElement = document.getElementById('mainTitleDisplay');
+            mainTitleWrapper = mainTitleDisplayElement.querySelector('.text-line-bg-wrapper');
+            subTitleDisplayElement = document.getElementById('subTitleDisplay');
+            subTitleWrapper = subTitleDisplayElement.querySelector('.text-line-bg-wrapper');
+            infoBoxDisplayElement = document.getElementById('infoBoxDisplay');
+            infoBoxTextContentElement = document.getElementById('infoBoxTextContent');
+            disclaimerTextDisplay = document.getElementById('disclaimerTextDisplay'); 
+            graphicWrapperDisplay = document.getElementById('graphicWrapperDisplay');
+            fullScreenBgContainer = document.getElementById('fullScreenBgContainer');
+            topControlsBar = document.getElementById('topControlsBar');
+            graphicViewArea = document.getElementById('graphicViewArea'); 
+
+            popupDisplayMediaSettings = document.getElementById('popupDisplayMediaSettings');
+            chkShowImagePanel = document.getElementById('chkShowImagePanel');
+            inputFullScreenBgUrl = document.getElementById('inputFullScreenBgUrl');
+            inputFileFullScreenBg = document.getElementById('inputFileFullScreenBg');
+            inputFullScreenBgOpacity = document.getElementById('inputFullScreenBgOpacity');
+            fullScreenBgOpacityValueDisplay = document.getElementById('fullScreenBgOpacityValueDisplay');
+            inputFullScreenBgPosX = document.getElementById('inputFullScreenBgPosX'); 
+            fullScreenBgPosXValueDisplay = document.getElementById('fullScreenBgPosXValueDisplay'); 
+            inputFullScreenBgPosY = document.getElementById('inputFullScreenBgPosY'); 
+            fullScreenBgPosYValueDisplay = document.getElementById('fullScreenBgPosYValueDisplay'); 
+            btnRemoveFullScreenBg = document.getElementById('btnRemoveFullScreenBg'); 
+
+            inputMediaUrl = document.getElementById('inputMediaUrl');
+            inputFileMedia = document.getElementById('inputFileMedia');
+            selectPanelImageSize = document.getElementById('selectPanelImageSize');
+            inputPanelImagePosX = document.getElementById('inputPanelImagePosX'); 
+            panelImagePosXValueDisplay = document.getElementById('panelImagePosXValueDisplay');
+            inputPanelImagePosY = document.getElementById('inputPanelImagePosY'); 
+            panelImagePosYValueDisplay = document.getElementById('panelImagePosYValueDisplay');
+            panelMediaControlsSection = document.getElementById('panelMediaControlsSection');
+
+            inputMaskOffsetTopBar = document.getElementById('inputMaskOffsetTopBar');
+            maskOffsetValueDisplayTop = document.getElementById('maskOffsetValueDisplayTop');
+            selectEntryAnimationGlobal = document.getElementById('selectEntryAnimation');
+            
+            inlineEditor = document.getElementById('inlineEditor');
+            inlineEditorLabel = document.getElementById('inlineEditorLabel');
+            inlineEditTextarea = document.getElementById('inlineEditTextarea');
+            inlineEditorBannerControls = document.getElementById('inlineEditorBannerControls'); 
+            inlineEditorInfoBoxTypeControls = document.getElementById('inlineEditorInfoBoxTypeControls');
+            inlineEditorInfoTypeSelect = document.getElementById('inlineEditorInfoTypeSelect');
+            inlineEditorInfoBoxFontControls = document.getElementById('inlineEditorInfoBoxFontControls');
+            inlineEditorInfoBoxFontSize = document.getElementById('inlineEditorInfoBoxFontSize');
+            infoBoxFontSizeValueDisplay = document.getElementById('infoBoxFontSizeValueDisplay');
+
+            iconCtrlTitleBannerSettings = document.getElementById('iconCtrlTitleBannerSettings');
+            popupTitleBannerSettings = document.getElementById('popupTitleBannerSettings');
+            chkMainTitleBanner = document.getElementById('chkMainTitleBanner');
+            mainTitleBannerColorPaletteElement = document.getElementById('mainTitleBannerColorPalette');
+            chkMainTitleBannerRounded = document.getElementById('chkMainTitleBannerRounded');
+            popupMainTitleText = document.getElementById('popupMainTitleText');
+            chkSubTitleBanner = document.getElementById('chkSubTitleBanner');
+            subTitleBannerColorPaletteElement = document.getElementById('subTitleBannerColorPalette');
+            chkSubTitleBannerRounded = document.getElementById('chkSubTitleBannerRounded');
+            popupSubTitleText = document.getElementById('popupSubTitleText');
+
+
+            inlineEditorInfoBoxBulletStyleControls = document.getElementById('inlineEditorInfoBoxBulletStyleControls');
+            inlineEditorBulletShapeSelect = document.getElementById('inlineEditorBulletShapeSelect');
+            inlineEditorBulletColorInput = document.getElementById('inlineEditorBulletColorInput');
+        }
+
+        function makeDraggable(popupElement) {
+            let offsetX, offsetY, isDragging = false;
+
+            popupElement.addEventListener('mousedown', (e) => {
+                if (e.target === popupElement || e.target.tagName === 'H4' || e.target.tagName === 'H5') { 
+                    isDragging = true;
+                    offsetX = e.clientX - popupElement.getBoundingClientRect().left;
+                    offsetY = e.clientY - popupElement.getBoundingClientRect().top;
+                    popupElement.classList.add('dragging');
+                    document.querySelectorAll('.mini-popup-controls').forEach(p => p.style.zIndex = 1001);
+                    popupElement.style.zIndex = 1002;
+                }
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                e.preventDefault(); 
+                
+                let newX = e.clientX - offsetX;
+                let newY = e.clientY - offsetY;
+
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+                const popupWidth = popupElement.offsetWidth;
+                const popupHeight = popupElement.offsetHeight;
+
+                if (newX < 0) newX = 0;
+                if (newY < 0) newY = 0;
+                if (newX + popupWidth > viewportWidth) newX = viewportWidth - popupWidth;
+                if (newY + popupHeight > viewportHeight) newY = viewportHeight - popupHeight;
+
+
+                popupElement.style.left = `${newX}px`;
+                popupElement.style.top = `${newY}px`;
+                popupElement.style.transform = 'none'; 
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (isDragging) {
+                    isDragging = false;
+                    popupElement.classList.remove('dragging');
+                }
+            });
+        }
+
+
+        function openPopup(popupId, triggerElement) {
+            closeAllPopups(); 
+            const popup = document.getElementById(popupId);
+            if (!popup) return;
+
+            popup.classList.add('visible');
+             showControlsBar(true); 
+
+            if (popupId === 'popupDisplayMediaSettings') {
+                chkShowImagePanel.checked = appState.showImagePanel;
+                inputFullScreenBgUrl.value = appState.fullScreenBgUrl;
+                inputFullScreenBgOpacity.value = appState.fullScreenBgOpacity;
+                fullScreenBgOpacityValueDisplay.textContent = Math.round(appState.fullScreenBgOpacity * 100) + '%';
+                inputFullScreenBgPosX.value = appState.fullScreenBgPosX;
+                fullScreenBgPosXValueDisplay.textContent = appState.fullScreenBgPosX + '%';
+                inputFullScreenBgPosY.value = appState.fullScreenBgPosY;
+                fullScreenBgPosYValueDisplay.textContent = appState.fullScreenBgPosY + '%';
+
+                inputMediaUrl.value = appState.mediaUrl;
+                selectPanelImageSize.value = appState.panelImageSize;
+                inputPanelImagePosX.value = appState.panelImagePosX; 
+                panelImagePosXValueDisplay.textContent = appState.panelImagePosX + '%'; 
+                inputPanelImagePosY.value = appState.panelImagePosY; 
+                panelImagePosYValueDisplay.textContent = appState.panelImagePosY + '%'; 
+                panelMediaControlsSection.style.display = appState.showImagePanel ? 'block' : 'none';
+                popup.style.left = '50%';
+                popup.style.top = '50%';
+                popup.style.transform = 'translate(-50%, -50%)';
+            } else if (popupId === 'popupTitleBannerSettings') {
+                popupMainTitleText.value = appState.mainTitle;
+                chkMainTitleBanner.checked = appState.mainTitleBanner;
+                chkMainTitleBannerRounded.checked = appState.mainTitleBannerRounded;
+                populateBannerColorPalette(mainTitleBannerColorPaletteElement, 'mainTitle', true); 
+
+                popupSubTitleText.value = appState.subTitle;
+                chkSubTitleBanner.checked = appState.subTitleBanner;
+                chkSubTitleBannerRounded.checked = appState.subTitleBannerRounded;
+                populateBannerColorPalette(subTitleBannerColorPaletteElement, 'subTitle', true);
+                
+                if (triggerElement && !popup.classList.contains('dragging')) {
+                    const rect = triggerElement.getBoundingClientRect();
+                    popup.style.top = (rect.bottom + 10) + 'px'; 
+                    let leftPos = rect.left + (rect.width / 2) - (popup.offsetWidth / 2); 
+                    if (leftPos < 10) leftPos = 10;
+                    if (leftPos + popup.offsetWidth > window.innerWidth - 10) {
+                        leftPos = window.innerWidth - popup.offsetWidth - 10;
+                    }
+                    popup.style.left = leftPos + 'px';
+                    popup.style.transform = 'none'; 
+                }
+
+
+            } else if (triggerElement && !popup.classList.contains('dragging')) { 
+                const rect = triggerElement.getBoundingClientRect();
+                popup.style.top = (rect.bottom + 10) + 'px'; 
+                let leftPos = rect.left + (rect.width / 2) - (popup.offsetWidth / 2); 
+                if (leftPos < 10) leftPos = 10;
+                if (leftPos + popup.offsetWidth > window.innerWidth - 10) {
+                    leftPos = window.innerWidth - popup.offsetWidth - 10;
+                }
+                popup.style.left = leftPos + 'px';
+                popup.style.transform = 'none'; 
+            }
+            if (popupId !== 'popupDisplayMediaSettings') {
+                makeDraggable(popup);
+            }
+        }
+
+        function closePopup(popupId) {
+            const popup = document.getElementById(popupId);
+            if (popup) popup.classList.remove('visible');
+            showControlsBar(); 
+        }
+        function closeAllPopups() {
+            document.querySelectorAll('.mini-popup-controls.visible').forEach(p => p.classList.remove('visible'));
+            if(inlineEditor && inlineEditor.style.display === 'block') cancelInlineEdit(); 
+            showControlsBar(); 
+        }
+        
+        function removeFullScreenBackground() {
+            appState.fullScreenBgUrl = "";
+            appState.fullScreenBgFile = null;
+            inputFileFullScreenBg.value = ""; 
+            inputFullScreenBgUrl.value = ""; 
+            appState.fullScreenBgPosX = "50"; 
+            appState.fullScreenBgPosY = "50";
+            inputFullScreenBgPosX.value = "50";
+            fullScreenBgPosXValueDisplay.textContent = "50%";
+            inputFullScreenBgPosY.value = "50";
+            fullScreenBgPosYValueDisplay.textContent = "50%";
+            updateGraphic();
+        }
+
+        function applyDisplayMediaOptions() { 
+            appState.showImagePanel = chkShowImagePanel.checked;
+            if (appState.showImagePanel) {
+                appState.mediaUrl = inputMediaUrl.value;
+                const panelFile = inputFileMedia.files[0];
+                if (panelFile) appState.mediaFile = panelFile;
+                else if (!inputMediaUrl.value) appState.mediaFile = null; 
+                appState.panelImageSize = selectPanelImageSize.value;
+            }
+            updateGraphic();
+        }
+       
+        let currentEditingElement = null; 
+
+        function editTextElement(elementToEdit) { 
+            closeAllPopups(); 
+            const textType = elementToEdit.dataset.textType;
+            currentEditingElement = elementToEdit; 
+            
+            inlineEditorLabel.textContent = `ערוך ${textType === 'mainTitle' ? 'כותרת ראשית' : textType === 'subTitle' ? 'כותרת משנה' : textType === 'infoBox' ? 'תוכן מידע' : 'דיסקליימר'}:`;
+            
+            inlineEditorBannerControls.style.display = 'none'; 
+            inlineEditorInfoBoxTypeControls.style.display = 'none';
+            inlineEditorInfoBoxFontControls.style.display = 'none';
+            inlineEditorInfoBoxBulletStyleControls.style.display = 'none';
+
+
+            if (textType === 'mainTitle' || textType === 'subTitle') {
+                inlineEditTextarea.value = appState[textType];
+            } else if (textType === 'infoBox') {
+                inlineEditTextarea.value = appState.infoBoxText; 
+                inlineEditorInfoBoxTypeControls.style.display = 'block';
+                inlineEditorInfoBoxFontControls.style.display = 'block';
+                
+                inlineEditorInfoTypeSelect.value = appState.infoBoxType;
+
+                if (appState.infoBoxType === 'bullets') {
+                    inlineEditorInfoBoxBulletStyleControls.style.display = 'block';
+                    inlineEditorBulletShapeSelect.value = appState.infoBoxBulletStyle;
+                    inlineEditorBulletColorInput.value = appState.infoBoxBulletColor;
+                }
+                
+                inlineEditorInfoBoxFontSize.value = appState.infoBoxFontSize;
+                if(infoBoxFontSizeValueDisplay) infoBoxFontSizeValueDisplay.textContent = appState.infoBoxFontSize;
+
+            } else if (textType === 'disclaimer') {
+                inlineEditTextarea.value = appState.disclaimerText;
+            }
+            
+            inlineEditor.style.left = '50%';
+            inlineEditor.style.top = 'calc(50% - 200px)'; 
+            inlineEditor.style.transform = 'translate(-50%, -50%)';
+            inlineEditor.style.display = 'block'; 
+            makeDraggable(inlineEditor); 
+            showControlsBar(true); 
+            inlineEditTextarea.focus();
+        }
+        
+        function saveInlineEdit() { 
+            inlineEditor.style.display = 'none';
+            currentEditingElement = null;
+            showControlsBar(); 
+        }
+
+        function cancelInlineEdit() { 
+            inlineEditor.style.display = 'none';
+            currentEditingElement = null;
+            showControlsBar(); 
+        }
+
+        function populateBannerColorPalette(paletteElement, textTypeKey, forSpecificTitleInPopup) {
+            paletteElement.innerHTML = ''; 
+            Object.keys(bannerColorOptions).forEach(colorName => {
+                const swatch = document.createElement('div');
+                swatch.className = 'color-swatch';
+                swatch.style.backgroundColor = bannerColorOptions[colorName].bg === 'transparent' ? '#eee' : bannerColorOptions[colorName].bg; 
+                if(bannerColorOptions[colorName].bg === 'transparent') swatch.style.border = '1px dashed #333';
+
+                swatch.onclick = (e) => {
+                    e.stopPropagation();
+                    if (forSpecificTitleInPopup) { 
+                         appState[textTypeKey + 'BannerColorName'] = colorName;
+                         appState[textTypeKey + 'Banner'] = colorName !== 'none';
+                         if (textTypeKey === 'mainTitle') chkMainTitleBanner.checked = (colorName !== 'none');
+                         if (textTypeKey === 'subTitle') chkSubTitleBanner.checked = (colorName !== 'none');
+                    } 
+                    updateGraphic();
+                };
+                paletteElement.appendChild(swatch);
+            });
+        }
+
+
+        let topBarHideTimeout;
+        function showControlsBar(keepVisible = false) {
+            if (!topControlsBar || !graphicViewArea) return;
+            topControlsBar.classList.remove('hidden-bar');
+            graphicViewArea.classList.remove('full-view-active');
+            
+            clearTimeout(topBarHideTimeout);
+            if (!keepVisible) {
+                topBarHideTimeout = setTimeout(() => {
+                    const isPopupVisible = document.querySelector('.mini-popup-controls.visible') || 
+                                           (inlineEditor && inlineEditor.style.display === 'block');
+                    if (!isPopupVisible) { 
+                        topControlsBar.classList.add('hidden-bar');
+                        graphicViewArea.classList.add('full-view-active');
+                    }
+                }, 7000);
+            }
+        }
+        
+        function applyBannerToContent(text, showBanner, bannerColorName, bannerRounded) { 
+            if (!text || text.trim() === '') return '';
+            const escapedText = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            const bannerColors = bannerColorOptions[bannerColorName] || bannerColorOptions.yellow; 
+            const borderRadiusStyle = bannerRounded ? '5px' : '0px'; 
+
+            if (showBanner && bannerColors.bg !== 'transparent') {
+                 return `<span class="text-line-bg" style="background-color: ${bannerColors.bg}; color: ${bannerColors.text}; border-radius: ${borderRadiusStyle};">${escapedText.replace(/\n/g, '<br>')}</span>`;
+            }
+            return escapedText.replace(/\n/g, '<br>');
+        }
+        
+        function applyAnimationWithDelay(element, animationClass, delay) {
+            if (!element) return; 
+            element.className = element.className.replace(/\banim-\S+/g, '').trim();
+            element.style.opacity = 0; 
+            
+            if (animationClass && animationClass !== "none") {
+                setTimeout(() => {
+                    element.style.animationDelay = '0s'; 
+                    void element.offsetWidth; 
+                    element.classList.add(animationClass);
+                    element.style.opacity = ''; 
+                }, delay);
+            } else {
+                 setTimeout(() => { 
+                    element.style.opacity = 1;
+                 }, delay);
+            }
+        }
+
+        // function updateTopBarIcons() { // No longer needed
+        // }
+
+
+        function updateGraphic() {
+            if (!imagePanelDisplay) initializeDOMElements(); 
+
+            if (appState.fullScreenBgFile) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    fullScreenBgContainer.style.backgroundImage = `url('${e.target.result}')`;
+                }
+                reader.readAsDataURL(appState.fullScreenBgFile);
+            } else if (appState.fullScreenBgUrl) {
+                fullScreenBgContainer.style.backgroundImage = `url('${appState.fullScreenBgUrl}')`;
+            } else {
+                fullScreenBgContainer.style.backgroundImage = 'none';
+            }
+            fullScreenBgContainer.style.opacity = appState.fullScreenBgOpacity;
+            fullScreenBgContainer.style.backgroundPosition = `${appState.fullScreenBgPosX}% ${appState.fullScreenBgPosY}%`;
+
+
+            const maskIconContainer = document.getElementById('topBarMaskSliderContainer'); 
+            if (appState.showImagePanel) {
+                imagePanelDisplay.classList.remove('hidden');
+                contentPanelDisplay.classList.remove('full-width');
+                if (maskIconContainer) maskIconContainer.style.display = 'flex'; 
+                
+                handleMedia(appState.mediaUrl, appState.mediaFile); 
+                imagePanelDisplay.style.backgroundSize = appState.panelImageSize;
+                imagePanelDisplay.style.backgroundPosition = `${appState.panelImagePosX}% ${appState.panelImagePosY}%`; 
+                
+                imagePanelDisplay.style.clipPath = 'polygon(0% 0%, 0% 0%, 0% 100%, 0% 100%)'; 
+                void imagePanelDisplay.offsetWidth; 
+                imagePanelDisplay.style.clipPath = `polygon(0% 0%, 100% 0%, calc(100% - ${appState.maskOffset}vw) 100%, 0% 100%)`;
+
+            } else {
+                imagePanelDisplay.classList.add('hidden');
+                contentPanelDisplay.classList.add('full-width');
+                if (maskIconContainer) maskIconContainer.style.display = 'none'; 
+            }
+            
+            const animationClass = appState.entryAnimation;
+
+            mainTitleDisplayElement.style.opacity = '0';
+            subTitleDisplayElement.style.opacity = '0';
+            infoBoxDisplayElement.style.opacity = '0';
+            if(disclaimerTextDisplay) disclaimerTextDisplay.style.opacity = '0';
+
+            mainTitleWrapper.innerHTML = applyBannerToContent(appState.mainTitle, appState.mainTitleBanner, appState.mainTitleBannerColorName, appState.mainTitleBannerRounded);
+            applyAnimationWithDelay(mainTitleDisplayElement, animationClass, 0);
+
+            subTitleWrapper.innerHTML = applyBannerToContent(appState.subTitle, appState.subTitleBanner, appState.subTitleBannerColorName, appState.subTitleBannerRounded);
+            applyAnimationWithDelay(subTitleDisplayElement, animationClass, 300); 
+            
+            infoBoxTextContentElement.innerHTML = ''; 
+            const infoTextForDisplay = appState.infoBoxText;
+            const escapedInfoText = infoTextForDisplay.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            
+            if (appState.infoBoxType === 'bullets') { 
+                const bullets = escapedInfoText.split('+').map(item => item.trim().replace(/\n/g, '<br>')).filter(item => item.length > 0);
+                const ul = document.createElement('ul');
+                bullets.forEach(bulletText => {
+                    const li = document.createElement('li');
+                    li.innerHTML = bulletText; 
+                    li.className = ''; 
+                    if (appState.infoBoxBulletStyle !== 'default') {
+                        li.classList.add(`bullet-${appState.infoBoxBulletStyle}`);
+                    }
+                    li.style.setProperty('--bullet-color', appState.infoBoxBulletColor);
+                    ul.appendChild(li);
+                });
+                infoBoxTextContentElement.appendChild(ul);
+            } else { 
+                 infoBoxTextContentElement.innerHTML = escapedInfoText.replace(/\n/g, '<br>');
+            }
+            
+            infoBoxDisplayElement.style.fontSize = appState.infoBoxFontSize + 'vw'; 
+            applyAnimationWithDelay(infoBoxDisplayElement, animationClass, 600); 
+
+            let currentDisclaimerTextDisplay = document.getElementById('disclaimerTextDisplayInternal') || document.getElementById('disclaimerTextDisplay');
+            if(currentDisclaimerTextDisplay) {
+                currentDisclaimerTextDisplay.innerHTML = appState.disclaimerText.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                applyAnimationWithDelay(currentDisclaimerTextDisplay, animationClass, 750); 
+            }
+
+            imagePanelDisplay.style.setProperty('--mask-offset', appState.maskOffset + 'vw');
+             if(inputMaskOffsetTopBar) inputMaskOffsetTopBar.value = appState.maskOffset; 
+            if(maskOffsetValueDisplayTop) maskOffsetValueDisplayTop.textContent = appState.maskOffset + 'vw'; 
+
+            graphicWrapperDisplay.style.background = appState.gradient;
+            // updateTopBarIcons(); // Removed
+        }
+
+        function handleMedia(url, fileObject) { 
+            const mediaContentContainer = imagePanelDisplay; 
+            mediaContentContainer.innerHTML = ''; 
+
+            const mediaEditOverlay = document.createElement('div');
+            mediaEditOverlay.className = 'edit-icon-overlay';
+            mediaEditOverlay.innerHTML = `<svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>`;
+            mediaEditOverlay.onclick = () => openPopup('popupDisplayMediaSettings', mediaEditOverlay); 
+            mediaContentContainer.appendChild(mediaEditOverlay);
+
+            const disclaimerContainer = document.createElement('div');
+            disclaimerContainer.className = 'disclaimer-container';
+            let currentDisclaimerText = appState.disclaimerText.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            disclaimerContainer.innerHTML = `
+                <span class="disclaimer-text" id="disclaimerTextDisplayInternal" data-text-type="disclaimer">${currentDisclaimerText}</span>
+                <span class="edit-icon" onclick="editTextElement(document.getElementById('disclaimerTextDisplayInternal'))">
+                    <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                </span>`;
+            mediaContentContainer.appendChild(disclaimerContainer);
+            disclaimerTextDisplay = document.getElementById('disclaimerTextDisplayInternal');
+
+
+            if (fileObject) {
+                const reader = new FileReader();
+                reader.onload = function(e) { renderMedia(e.target.result, fileObject.type, mediaContentContainer); }
+                reader.readAsDataURL(fileObject);
+            } else if (url) {
+                let type = '';
+                if (/\.(jpeg|jpg|gif|png|webp)$/i.test(url)) type = 'image';
+                else if (/\.(mp4|webm|ogg)$/i.test(url)) type = 'video';
+                renderMedia(url, type, mediaContentContainer);
+            } else {
+                 mediaContentContainer.style.backgroundImage = "url('https://placehold.co/640x1080/transparent/fff?text= ')"; 
+            }
+        }
+
+        function renderMedia(src, type, container) {
+            const existingVideo = container.querySelector('video');
+            if(existingVideo) existingVideo.remove();
+            
+            if (type.startsWith('image')) {
+                container.style.backgroundImage = `url('${src}')`;
+            } else if (type.startsWith('video')) {
+                container.style.backgroundImage = 'none'; 
+                const video = document.createElement('video');
+                video.src = src; video.autoplay = true; video.loop = true;
+                video.muted = true; video.playsInline = true;
+                const firstChild = container.firstChild; 
+                if (firstChild) {
+                    container.insertBefore(video, firstChild);
+                } else {
+                    container.appendChild(video);
+                }
+            } else if (src) { 
+                 container.style.backgroundImage = `url('${src}')`;
+            }
+        }
+        
+        function addEventListenersAfterDOM() {
+            document.getElementById('iconCtrlDisplayMedia').addEventListener('click', (e) => openPopup('popupDisplayMediaSettings', e.currentTarget));
+            document.getElementById('iconCtrlAnimation').addEventListener('click', (e) => openPopup('popupCtrlAnimation', e.currentTarget));
+            
+            iconCtrlTitleBannerSettings.addEventListener('click', (e) => openPopup('popupTitleBannerSettings', e.currentTarget));
+
+            chkMainTitleBanner.addEventListener('change', () => {
+                appState.mainTitleBanner = chkMainTitleBanner.checked;
+                if (!chkMainTitleBanner.checked) appState.mainTitleBannerRounded = false; 
+                updateGraphic();
+            });
+            chkMainTitleBannerRounded.addEventListener('change', () => {
+                if (appState.mainTitleBanner) appState.mainTitleBannerRounded = chkMainTitleBannerRounded.checked;
+                else chkMainTitleBannerRounded.checked = false; 
+                updateGraphic();
+            });
+            popupMainTitleText.addEventListener('input', function() {
+                let currentText = this.value;
+                const words = currentText.trim().split(/\s+/).filter(Boolean);
+                if (words.length > 7) {
+                    const originalLength = this.value.length;
+                    currentText = words.slice(0, 7).join(' ');
+                    let cursorPos = this.selectionStart;
+                    if (this.value !== currentText) {
+                        this.value = currentText;
+                        cursorPos -= (originalLength - currentText.length);
+                        if (cursorPos < 0) cursorPos = 0;
+                        if (cursorPos > currentText.length) cursorPos = currentText.length;
+                        this.setSelectionRange(cursorPos, cursorPos);
+                    }
+                }
+                appState.mainTitle = currentText;
+                if(inlineEditor.style.display === 'block' && currentEditingElement && currentEditingElement.dataset.textType === 'mainTitle') {
+                    inlineEditTextarea.value = currentText;
+                }
+                updateGraphic();
+            });
+
+
+            chkSubTitleBanner.addEventListener('change', () => {
+                appState.subTitleBanner = chkSubTitleBanner.checked;
+                if (!chkSubTitleBanner.checked) appState.subTitleBannerRounded = false;
+                updateGraphic();
+            });
+            chkSubTitleBannerRounded.addEventListener('change', () => {
+                if (appState.subTitleBanner) appState.subTitleBannerRounded = chkSubTitleBannerRounded.checked;
+                else chkSubTitleBannerRounded.checked = false;
+                updateGraphic();
+            });
+            popupSubTitleText.addEventListener('input', function() {
+                let currentText = this.value;
+                const words = currentText.trim().split(/\s+/).filter(Boolean);
+                if (words.length > 7) {
+                     const originalLength = this.value.length;
+                    currentText = words.slice(0, 7).join(' ');
+                    let cursorPos = this.selectionStart;
+                    if (this.value !== currentText) {
+                        this.value = currentText;
+                        cursorPos -= (originalLength - currentText.length);
+                        if (cursorPos < 0) cursorPos = 0;
+                        if (cursorPos > currentText.length) cursorPos = currentText.length;
+                        this.setSelectionRange(cursorPos, cursorPos);
+                    }
+                }
+                appState.subTitle = currentText;
+                 if(inlineEditor.style.display === 'block' && currentEditingElement && currentEditingElement.dataset.textType === 'subTitle') {
+                    inlineEditTextarea.value = currentText;
+                }
+                updateGraphic();
+            });
+
+
+            if (inputMaskOffsetTopBar) { 
+                inputMaskOffsetTopBar.addEventListener('input', () => { 
+                    if(maskOffsetValueDisplayTop) maskOffsetValueDisplayTop.textContent = inputMaskOffsetTopBar.value + 'vw';
+                    appState.maskOffset = inputMaskOffsetTopBar.value; 
+                    updateGraphic(); 
+                });
+            }
+
+            if (chkShowImagePanel) {
+                chkShowImagePanel.addEventListener('change', function() { 
+                     panelMediaControlsSection.style.display = this.checked ? 'block' : 'none';
+                     appState.showImagePanel = this.checked; 
+                     updateGraphic();
+                });
+            }
+            if (selectEntryAnimationGlobal) {
+                selectEntryAnimationGlobal.addEventListener('change', () => {
+                    appState.entryAnimation = selectEntryAnimationGlobal.value; 
+                    updateGraphic(); 
+                });
+            }
+            if (inputFullScreenBgOpacity) {
+                inputFullScreenBgOpacity.addEventListener('input', () => {
+                    appState.fullScreenBgOpacity = parseFloat(inputFullScreenBgOpacity.value);
+                    fullScreenBgOpacityValueDisplay.textContent = Math.round(appState.fullScreenBgOpacity * 100) + '%';
+                    updateGraphic();
+                });
+            }
+            if (inputFullScreenBgPosX) {
+                inputFullScreenBgPosX.addEventListener('input', () => {
+                    appState.fullScreenBgPosX = inputFullScreenBgPosX.value;
+                    fullScreenBgPosXValueDisplay.textContent = appState.fullScreenBgPosX + '%';
+                    updateGraphic();
+                });
+            }
+            if (inputFullScreenBgPosY) {
+                inputFullScreenBgPosY.addEventListener('input', () => {
+                    appState.fullScreenBgPosY = inputFullScreenBgPosY.value;
+                    fullScreenBgPosYValueDisplay.textContent = appState.fullScreenBgPosY + '%';
+                    updateGraphic();
+                });
+            }
+            if (btnRemoveFullScreenBg) {
+                btnRemoveFullScreenBg.addEventListener('click', removeFullScreenBackground);
+            }
+            if (inputPanelImagePosX) {
+                inputPanelImagePosX.addEventListener('input', () => {
+                    appState.panelImagePosX = inputPanelImagePosX.value;
+                    panelImagePosXValueDisplay.textContent = appState.panelImagePosX + '%';
+                    updateGraphic();
+                });
+            }
+            if (inputPanelImagePosY) {
+                inputPanelImagePosY.addEventListener('input', () => {
+                    appState.panelImagePosY = inputPanelImagePosY.value;
+                    panelImagePosYValueDisplay.textContent = appState.panelImagePosY + '%';
+                    updateGraphic();
+                });
+            }
+
+
+            inlineEditTextarea.addEventListener('input', function() {
+                if (currentEditingElement) {
+                    const textType = currentEditingElement.dataset.textType;
+                    let currentText = this.value;
+
+                    if (textType === 'mainTitle' || textType === 'subTitle') {
+                        const words = currentText.trim().split(/\s+/).filter(Boolean);
+                        if (words.length > 7) {
+                            const originalLength = this.value.length;
+                            currentText = words.slice(0, 7).join(' ');
+                            let cursorPos = this.selectionStart;
+                            if (this.value !== currentText) {
+                                this.value = currentText;
+                                cursorPos -= (originalLength - currentText.length);
+                                if (cursorPos < 0) cursorPos = 0;
+                                if (cursorPos > currentText.length) cursorPos = currentText.length;
+                                this.setSelectionRange(cursorPos, cursorPos);
+                            }
+                        }
+                        appState[textType] = currentText;
+                        if (textType === 'mainTitle' && popupMainTitleText) popupMainTitleText.value = currentText;
+                        if (textType === 'subTitle' && popupSubTitleText) popupSubTitleText.value = currentText;
+
+                    } else if (textType === 'infoBox') { 
+                         appState.infoBoxText = currentText;
+                    } else { 
+                        appState[textType] = currentText; 
+                    }
+                    updateGraphic();
+                }
+            });
+            
+            inlineEditorInfoTypeSelect.addEventListener('change', function() {
+                if (currentEditingElement && currentEditingElement.dataset.textType === 'infoBox') {
+                    appState.infoBoxType = this.value;
+                    inlineEditorInfoBoxBulletStyleControls.style.display = this.value === 'bullets' ? 'block' : 'none';
+                    updateGraphic();
+                }
+            });
+            inlineEditorBulletShapeSelect.addEventListener('change', function() {
+                if (currentEditingElement && currentEditingElement.dataset.textType === 'infoBox') {
+                    appState.infoBoxBulletStyle = this.value;
+                    updateGraphic();
+                }
+            });
+            inlineEditorBulletColorInput.addEventListener('input', function() { 
+                if (currentEditingElement && currentEditingElement.dataset.textType === 'infoBox') {
+                    appState.infoBoxBulletColor = this.value;
+                    updateGraphic();
+                }
+            });
+            inlineEditorInfoBoxFontSize.addEventListener('input', function() {
+                if (currentEditingElement && currentEditingElement.dataset.textType === 'infoBox') {
+                    if(infoBoxFontSizeValueDisplay) infoBoxFontSizeValueDisplay.textContent = this.value;
+                    appState.infoBoxFontSize = this.value;
+                    updateGraphic();
+                }
+            });
+            
+
+            document.addEventListener('mousemove', () => showControlsBar()); 
+            document.addEventListener('click', (event) => {
+                const isTopBarControl = event.target.closest('.top-controls-bar');
+                const isPopup = event.target.closest('.mini-popup-controls');
+                const isInlineEditor = event.target.closest('#inlineEditor');
+                const isEditIcon = event.target.closest('.edit-icon');
+
+                if (!isTopBarControl && !isPopup && !isInlineEditor && !isEditIcon) {
+                     closeAllPopups();
+                }
+                if (isTopBarControl || isPopup || isInlineEditor || isEditIcon) {
+                    showControlsBar(true); 
+                } else {
+                    showControlsBar(); 
+                }
+            });
+
+            imagePanelDisplay.addEventListener('dragover', (event) => { event.preventDefault(); imagePanelDisplay.classList.add('dragover'); });
+            imagePanelDisplay.addEventListener('dragleave', () => { imagePanelDisplay.classList.remove('dragover'); });
+            imagePanelDisplay.addEventListener('drop', (event) => {
+                event.preventDefault(); imagePanelDisplay.classList.remove('dragover');
+                const file = event.dataTransfer.files[0];
+                if (file && appState.showImagePanel) { 
+                    appState.mediaFile = file;
+                    appState.mediaUrl = ''; 
+                    if(document.getElementById('inputFileMedia')) document.getElementById('inputFileMedia').files = event.dataTransfer.files;
+                    updateGraphic();
+                }
+            });
+            if(inputFileMedia) {
+                inputFileMedia.addEventListener('change', () => { 
+                    const file = inputFileMedia.files[0];
+                    if(file) { 
+                        appState.mediaFile = file;
+                        appState.mediaUrl = ''; 
+                        if(inputMediaUrl) inputMediaUrl.value = ''; 
+                        updateGraphic(); 
+                    }
+                });
+            }
+            if(inputFileFullScreenBg) {
+                inputFileFullScreenBg.addEventListener('change', () => {
+                    const file = inputFileFullScreenBg.files[0];
+                    if (file) {
+                        appState.fullScreenBgFile = file;
+                        appState.fullScreenBgUrl = ''; 
+                        if(inputFullScreenBgUrl) inputFullScreenBgUrl.value = ''; 
+                        updateGraphic(); 
+                    }
+                });
+            }
+            if(inputFullScreenBgUrl) {
+                inputFullScreenBgUrl.addEventListener('input', () => { 
+                    appState.fullScreenBgUrl = inputFullScreenBgUrl.value;
+                    if (inputFullScreenBgUrl.value) { 
+                        appState.fullScreenBgFile = null;
+                        if(inputFileFullScreenBg) inputFileFullScreenBg.value = "";
+                    }
+                    updateGraphic();
+                });
+            }
+            
+            document.querySelectorAll('.gradient-button').forEach(button => {
+                button.addEventListener('click', () => {
+                    appState.gradient = button.dataset.gradient;
+                    updateGraphic();
+                });
+            });
+
+            inputMaskOffsetTopBar.value = appState.maskOffset;
+            if(maskOffsetValueDisplayTop) maskOffsetValueDisplayTop.textContent = appState.maskOffset + 'vw';
+            selectEntryAnimationGlobal.value = appState.entryAnimation;
+            
+            disclaimerTextDisplay = document.getElementById('disclaimerTextDisplay'); 
+
+            chkShowImagePanel.checked = appState.showImagePanel;
+            inputFullScreenBgUrl.value = appState.fullScreenBgUrl;
+            inputFullScreenBgOpacity.value = appState.fullScreenBgOpacity;
+            if(fullScreenBgOpacityValueDisplay) fullScreenBgOpacityValueDisplay.textContent = Math.round(appState.fullScreenBgOpacity * 100) + '%';
+            inputFullScreenBgPosX.value = appState.fullScreenBgPosX;
+            if(fullScreenBgPosXValueDisplay) fullScreenBgPosXValueDisplay.textContent = appState.fullScreenBgPosX + '%';
+            inputFullScreenBgPosY.value = appState.fullScreenBgPosY;
+            if(fullScreenBgPosYValueDisplay) fullScreenBgPosYValueDisplay.textContent = appState.fullScreenBgPosY + '%';
+
+
+            updateGraphic(); 
+            showControlsBar(); 
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeDOMElements();
+            addEventListenersAfterDOM();
+        });
+    </script>
+</body>
+</html>
