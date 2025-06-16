@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>סטודיו מפות אינטראקטיבי</title>
+    
+    <!-- טעינת Tailwind CSS לעיצוב מודרני -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- טעינת פונט Inter של גוגל -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; overflow: hidden; user-select: none; }
+        .gmnoprint a, .gm-style-cc, .gm-fullscreen-control { display:none !important; }
+        .tool-btn.active { background-color: #eef2ff; color: #4338ca; }
+        .draw-mode-btn.active { background-color: #dbeafe; color: #1e40af; }
+        input[type='number']::-webkit-outer-spin-button,
+        input[type='number']::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type='number'] { -moz-appearance: textfield; }
+        .panel-enter { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        /* עיצוב לייבל מותאם אישית */
+        .custom-label {
+            background: rgba(255, 255, 255, 0.85); border: 1px solid rgba(0,0,0,0.1); padding: 5px 10px; border-radius: 8px;
+            white-space: nowrap; transform: translate(-50%, -150%); box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); cursor: pointer; transition: opacity 0.4s ease-in-out;
+        }
+        .drag-handle { position: absolute; top: 8px; right: 8px; width: 20px; height: 20px; cursor: grab; display: flex; align-items: center; justify-content: center; }
+        .drag-handle:active { cursor: grabbing; }
+        .icon-picker-small button.active { border-color: #4f46e5; background-color: #eef2ff; }
+        /* Style for Google Places Autocomplete dropdown */
+        .pac-container { z-index: 1050 !important; border-radius: 0.5rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); border: 1px solid #e5e7eb; }
+        .pac-item { padding: 0.5rem 1rem; border-top: 1px solid #f3f4f6; cursor: pointer; }
+        .pac-item:first-child { border-top: none; }
+        .pac-item:hover { background-color: #f9fafb; }
+        .pac-item-query { font-size: 0.875rem; font-weight: 500; color: #111827; }
+        .pac-matched { font-weight: 700; }
+         #preview-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5); color: white;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; z-index: 1000;
+            opacity: 0; transition: opacity 0.3s; pointer-events: none;
+        }
+        #preview-overlay.visible { opacity: 1; }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col items-center justify-center h-screen">
+
+    <div class="w-full h-full bg-white shadow-2xl overflow-hidden flex flex-col">
+        <!-- סרגל כלים עליון -->
+        <header id="app-header" class="p-2 border-b border-gray-200 bg-white z-20 flex justify-between items-center gap-4 transition-transform duration-300">
+            <h1 class="text-lg font-bold text-gray-800 px-4">סטודיו מפות</h1>
+            <div class="flex-grow max-w-md">
+                 <input type="text" id="location-search-input" placeholder="חפש מיקום או כתובת..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">
+            </div>
+            <div id="main-controls" class="hidden flex items-center gap-1">
+                 <div id="tool-panels-container" class="absolute top-[65px] left-3 space-y-3"></div>
+                <!-- כלי עריכה ראשיים -->
+                <button id="poi-tool-btn" data-panel="poi-panel" class="tool-btn p-2 rounded-lg hover:bg-gray-100 transition-colors" title="הוספת נקודת עניין"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button>
+                <button id="style-tool-btn" data-panel="style-panel" class="tool-btn p-2 rounded-lg hover:bg-gray-100 transition-colors" title="סגנונות מפה"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a7 7 0 1 0 10 10"></path></svg></button>
+                <button id="draw-tool-btn" data-panel="draw-panel" class="tool-btn p-2 rounded-lg hover:bg-gray-100 transition-colors" title="כלי ציור"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>
+                <button id="camera-tool-btn" data-panel="camera-panel" class="tool-btn p-2 rounded-lg hover:bg-gray-100 transition-colors" title="אנימציית מצלמה"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></button>
+                
+                <div class="border-r h-6 mx-2"></div>
+
+                <!-- כלי תצוגה וניקוי -->
+                 <button id="labels-toggle-btn" class="tool-btn p-2 rounded-lg hover:bg-gray-100 transition-colors" title="הסתר/הצג תוויות"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-open"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-closed hidden"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg></button>
+                <button id="terrain-toggle-btn" class="tool-btn p-2 rounded-lg hover:bg-gray-100 transition-colors" title="הצג פני שטח"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 21 4.5-9 2.5 4 4.5-9L21 21"/><path d="m3 15 4.5-9 2.5 4 4.5-9L21 15"/></svg></button>
+                <button id="clear-all-btn" class="tool-btn p-2 rounded-lg hover:bg-gray-100 transition-colors" title="נקה הכל"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></button>
+                <button id="preview-btn" class="tool-btn p-2 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 transition-colors" title="תצוגה מקדימה"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></button>
+            </div>
+        </header>
+        <div id="error-message" class="hidden p-4 text-sm text-red-800 bg-red-50 z-30" role="alert"></div>
+        <main id="map" class="flex-grow w-full h-full bg-gray-200"></main>
+        <div id="preview-overlay">לחץ Esc ליציאה מתצוגה מקדימה</div>
+    </div>
+
+    <!-- תבניות HTML עבור פאנלי הכלים -->
+     <template id="poi-panel-template">
+        <div class="panel-enter w-72 bg-white rounded-xl shadow-lg border border-gray-200 p-4 space-y-4">
+             <div class="drag-handle text-gray-400">...</div><h3 class="font-bold text-lg mb-2">הוספת נקודת עניין</h3>
+             <div>
+                <label for="poi-search-input" class="block text-sm font-medium text-gray-700">חפש כתובת</label>
+                <input type="text" id="poi-search-input" placeholder="לדוגמה: מגדלי עזריאלי, תל אביב" class="mt-1 w-full p-2 border rounded-md">
+            </div>
+             <div>
+                <label for="poi-title-input" class="block text-sm font-medium text-gray-700">כותרת (אופציונלי)</label>
+                <input type="text" id="poi-title-input" placeholder="שם הנקודה" class="mt-1 w-full p-2 border rounded-md">
+            </div>
+             <div>
+                 <label class="block text-sm font-medium text-gray-700">בחר אייקון</label>
+                 <div id="poi-icon-picker" class="mt-1 grid grid-cols-6 gap-2 text-gray-700">
+                    <button data-icon-svg='<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="#F44336" stroke="white" stroke-width="1"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>' class="p-2 border-2 border-transparent rounded-md hover:bg-gray-100"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#F44336" stroke="white" stroke-width="1" class="mx-auto"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></button>
+                    <button data-icon-svg='<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="gold" stroke="black" stroke-width="0.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>' class="p-2 border-2 border-transparent rounded-md hover:bg-gray-100"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="gold" stroke="black" stroke-width="0.5" class="mx-auto"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></button>
+                    <button data-icon-svg='<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="#2196F3" stroke="white" stroke-width="1"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>' class="p-2 border-2 border-transparent rounded-md hover:bg-gray-100"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#2196F3" stroke="white" stroke-width="1" class="mx-auto"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg></button>
+                 </div>
+            </div>
+             <button id="add-poi-btn" class="w-full bg-indigo-600 text-white p-2 rounded-md hover:bg-indigo-700">הוסף נקודת ציון</button>
+        </div>
+    </template>
+    <template id="style-panel-template">
+        <div class="panel-enter w-64 bg-white rounded-xl shadow-lg border border-gray-200 p-4">
+             <div class="drag-handle text-gray-400">...</div><h3 class="font-bold text-lg mb-3">סגנונות מפה</h3>
+            <div class="grid grid-cols-2 gap-2">
+                <button class="style-option p-2 rounded-md hover:bg-gray-100 border" data-style="default">רגיל</button><button class="style-option p-2 rounded-md hover:bg-gray-100 border" data-style="dark">כהה</button><button class="style-option p-2 rounded-md hover:bg-gray-100 border" data-style="retro">רטרו</button><button class="style-option p-2 rounded-md hover:bg-gray-100 border" data-style="silver">כסוף</button><button class="style-option p-2 rounded-md hover:bg-gray-100 border" data-style="aubergine">חציל</button><button class="style-option p-2 rounded-md hover:bg-gray-100 border" data-style="night">לילה</button><button class="style-option p-2 rounded-md hover:bg-gray-100 border" data-style="lightDream">חלום בהיר</button><button class="style-option p-2 rounded-md hover:bg-gray-100 border" data-style="blueWater">מים כחולים</button>
+            </div>
+        </div>
+    </template>
+    <template id="draw-panel-template">
+        <div class="panel-enter w-64 bg-white rounded-xl shadow-lg border border-gray-200 p-4 space-y-4">
+             <div class="drag-handle text-gray-400">...</div><h3 class="font-bold text-lg mb-2">כלי ציור</h3>
+            <button id="draw-mode-line" class="draw-mode-btn w-full p-2 rounded-md border">הפעל מצב ציור</button>
+             <div><label for="line-color" class="block text-sm font-medium text-gray-700">צבע קו</label><input type="color" id="line-color" value="#FF0000" class="mt-1 w-full h-10 p-1 border rounded-md"></div>
+            <div><label for="line-width" class="block text-sm font-medium text-gray-700">עובי קו: <span id="line-width-value">3</span>px</label><input type="range" id="line-width" min="1" max="20" value="3" class="mt-1 w-full"></div>
+            <div class="border-t pt-4 space-y-2"><button id="animate-draw-btn" class="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600 transition-colors">הפעל אנימציית ציור</button></div>
+        </div>
+    </template>
+    <template id="area-panel-template">
+        <div class="panel-enter w-64 bg-white rounded-xl shadow-lg border border-gray-200 p-4 space-y-4">
+            <div class="drag-handle text-gray-400">...</div><h3 class="font-bold text-lg mb-2">צביעת שטחים</h3>
+            <p class="text-xs text-gray-500">לחץ על מדינה כדי לצבוע אותה. לחץ שוב כדי למחוק את הצבע.</p>
+            <div><label for="area-color" class="block text-sm font-medium text-gray-700">צבע מילוי</label><input type="color" id="area-color" value="#FF0000" class="mt-1 w-full h-10 p-1 border rounded-md"></div>
+            <div><label for="area-opacity" class="block text-sm font-medium text-gray-700">שקיפות: <span id="area-opacity-value">0.35</span></label><input type="range" id="area-opacity" min="0" max="1" step="0.05" value="0.35" class="mt-1 w-full"></div>
+            <button id="clear-areas-btn" class="w-full bg-red-500 text-white p-2 rounded-md hover:bg-red-600 transition-colors">נקה את כל השטחים</button>
+        </div>
+    </template>
+    <template id="camera-panel-template">
+        <div class="panel-enter w-72 bg-white rounded-xl shadow-lg border border-gray-200 p-4 space-y-4">
+             <div class="drag-handle text-gray-400">...</div>
+            <h3 class="font-bold text-lg mb-2">אנימציית מצלמה</h3>
+             <div>
+                <label for="keyframe-title" class="block text-sm font-medium text-gray-700">כותרת לנקודת מפתח (אופציונלי)</label>
+                <input type="text" id="keyframe-title" placeholder="לדוגמה: מגדלי עזריאלי" class="mt-1 w-full p-2 border rounded-md">
+            </div>
+            <button id="add-keyframe-btn" class="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600 disabled:opacity-50">הוסף נקודת מפתח</button>
+            <div>
+                 <label for="animation-duration" class="block text-sm font-medium text-gray-700">משך מעבר (שניות): <span id="animation-duration-value">3</span></label>
+                <input type="range" id="animation-duration" min="1" max="15" value="3" class="mt-1 w-full">
+            </div>
+            <div id="keyframes-list" class="space-y-1 max-h-32 overflow-y-auto border-t border-b py-2"></div>
+            <div class="grid grid-cols-2 gap-2">
+                <button id="play-animation-btn" class="w-full bg-green-500 text-white p-2 rounded-md hover:bg-green-600 disabled:opacity-50" disabled>נגן</button>
+                <button id="clear-animation-btn" class="w-full bg-red-500 text-white p-2 rounded-md hover:bg-red-600 disabled:opacity-50" disabled>נקה</button>
+            </div>
+        </div>
+    </template>
+
+    <script>
+        let map;
+        let drawnShapes = [], customLabels = [], customIcons = [], featureLayers = {};
+        let animationPath = [], animationFrameId;
+        let CustomLabel;
+        let animationDuration = 3000;
+        let drawingManager;
+        
+        const mapStyles = {
+            default: [],
+            dark: [{"elementType":"geometry","stylers":[{"color":"#212121"}]},{"elementType":"labels.icon","stylers":[{"visibility":"off"}]},{"elementType":"labels.text.fill","stylers":[{"color":"#757575"}]},{"elementType":"labels.text.stroke","stylers":[{"color":"#212121"}]},{"featureType":"administrative","elementType":"geometry","stylers":[{"color":"#757575"}]},{"featureType":"administrative.country","elementType":"labels.text.fill","stylers":[{"color":"#9e9e9e"}]},{"featureType":"administrative.land_parcel","stylers":[{"visibility":"off"}]},{"featureType":"administrative.locality","elementType":"labels.text.fill","stylers":[{"color":"#bdbdbd"}]},{"featureType":"poi","elementType":"labels.text.fill","stylers":[{"color":"#757575"}]},{"featureType":"poi.park","elementType":"geometry","stylers":[{"color":"#181818"}]},{"featureType":"poi.park","elementType":"labels.text.fill","stylers":[{"color":"#616161"}]},{"featureType":"poi.park","elementType":"labels.text.stroke","stylers":[{"color":"#1b1b1b"}]},{"featureType":"road","elementType":"geometry.fill","stylers":[{"color":"#2c2c2c"}]},{"featureType":"road","elementType":"labels.text.fill","stylers":[{"color":"#8a8a8a"}]},{"featureType":"road.arterial","elementType":"geometry","stylers":[{"color":"#373737"}]},{"featureType":"road.highway","elementType":"geometry","stylers":[{"color":"#3c3c3c"}]},{"featureType":"road.highway.controlled_access","elementType":"geometry","stylers":[{"color":"#4e4e4e"}]},{"featureType":"road.local","elementType":"labels.text.fill","stylers":[{"color":"#616161"}]},{"featureType":"transit","elementType":"labels.text.fill","stylers":[{"color":"#757575"}]},{"featureType":"water","elementType":"geometry","stylers":[{"color":"#000000"}]},{"featureType":"water","elementType":"labels.text.fill","stylers":[{"color":"#3d3d3d"}]}],
+            retro: [{"elementType":"geometry","stylers":[{"color":"#ebe3cd"}]},{"elementType":"labels.text.fill","stylers":[{"color":"#523735"}]},{"elementType":"labels.text.stroke","stylers":[{"color":"#f5f1e6"}]},{"featureType":"administrative","elementType":"geometry.stroke","stylers":[{"color":"#c9b2a6"}]},{"featureType":"administrative.land_parcel","elementType":"geometry.stroke","stylers":[{"color":"#dcd2be"}]},{"featureType":"administrative.land_parcel","elementType":"labels.text.fill","stylers":[{"color":"#ae9e91"}]},{"featureType":"landscape.natural","elementType":"geometry","stylers":[{"color":"#dfd2ae"}]},{"featureType":"poi","elementType":"geometry","stylers":[{"color":"#dfd2ae"}]},{"featureType":"poi","elementType":"labels.text.fill","stylers":[{"color":"#93817c"}]},{"featureType":"poi.park","elementType":"geometry.fill","stylers":[{"color":"#a5b076"}]},{"featureType":"poi.park","elementType":"labels.text.fill","stylers":[{"color":"#447530"}]},{"featureType":"road","elementType":"geometry","stylers":[{"color":"#f5f1e6"}]},{"featureType":"road.arterial","elementType":"geometry","stylers":[{"color":"#fdfcf8"}]},{"featureType":"road.highway","elementType":"geometry","stylers":[{"color":"#f8c967"}]},{"featureType":"road.highway","elementType":"geometry.stroke","stylers":[{"color":"#e9bc62"}]},{"featureType":"road.highway.controlled_access","elementType":"geometry","stylers":[{"color":"#e98d58"}]},{"featureType":"road.highway.controlled_access","elementType":"geometry.stroke","stylers":[{"color":"#db8555"}]},{"featureType":"road.local","elementType":"labels.text.fill","stylers":[{"color":"#806b63"}]},{"featureType":"transit.line","elementType":"geometry","stylers":[{"color":"#dfd2ae"}]},{"featureType":"transit.line","elementType":"labels.text.fill","stylers":[{"color":"#8f7d77"}]},{"featureType":"transit.line","elementType":"labels.text.stroke","stylers":[{"color":"#ebe3cd"}]},{"featureType":"transit.station","elementType":"geometry","stylers":[{"color":"#dfd2ae"}]},{"featureType":"water","elementType":"geometry.fill","stylers":[{"color":"#b9d3c2"}]},{"featureType":"water","elementType":"labels.text.fill","stylers":[{"color":"#92998d"}]}],
+            silver: [{"elementType":"geometry","stylers":[{"color":"#f5f5f5"}]},{"elementType":"labels.icon","stylers":[{"visibility":"off"}]},{"elementType":"labels.text.fill","stylers":[{"color":"#616161"}]},{"elementType":"labels.text.stroke","stylers":[{"color":"#f5f5f5"}]},{"featureType":"administrative.land_parcel","elementType":"labels.text.fill","stylers":[{"color":"#bdbdbd"}]},{"featureType":"poi","elementType":"geometry","stylers":[{"color":"#eeeeee"}]},{"featureType":"poi","elementType":"labels.text.fill","stylers":[{"color":"#757575"}]},{"featureType":"poi.park","elementType":"geometry","stylers":[{"color":"#e5e5e5"}]},{"featureType":"poi.park","elementType":"labels.text.fill","stylers":[{"color":"#9e9e9e"}]},{"featureType":"road","elementType":"geometry","stylers":[{"color":"#ffffff"}]},{"featureType":"road.arterial","elementType":"labels.text.fill","stylers":[{"color":"#757575"}]},{"featureType":"road.highway","elementType":"geometry","stylers":[{"color":"#dadada"}]},{"featureType":"road.highway","elementType":"labels.text.fill","stylers":[{"color":"#616161"}]},{"featureType":"road.local","elementType":"labels.text.fill","stylers":[{"color":"#9e9e9e"}]},{"featureType":"transit.line","elementType":"geometry","stylers":[{"color":"#e5e5e5"}]},{"featureType":"transit.station","elementType":"geometry","stylers":[{"color":"#eeeeee"}]},{"featureType":"water","elementType":"geometry","stylers":[{"color":"#c9c9c9"}]},{"featureType":"water","elementType":"labels.text.fill","stylers":[{"color":"#9e9e9e"}]}],
+            aubergine: [{"elementType":"geometry","stylers":[{"color":"#1b1b1b"}]},{"elementType":"labels.text.fill","stylers":[{"color":"#757575"}]},{"elementType":"labels.text.stroke","stylers":[{"color":"#1b1b1b"}]},{"featureType":"administrative","elementType":"geometry","stylers":[{"color":"#757575"}]},{"featureType":"administrative.country","elementType":"labels.text.fill","stylers":[{"color":"#9e9e9e"}]},{"featureType":"administrative.land_parcel","stylers":[{"visibility":"off"}]},{"featureType":"administrative.locality","elementType":"labels.text.fill","stylers":[{"color":"#bdbdbd"}]},{"featureType":"poi","elementType":"labels.text.fill","stylers":[{"color":"#757575"}]},{"featureType":"poi.park","elementType":"geometry","stylers":[{"color":"#181818"}]},{"featureType":"road","elementType":"geometry.fill","stylers":[{"color":"#2c2c2c"}]},{"featureType":"road","elementType":"labels.text.fill","stylers":[{"color":"#8a8a8a"}]},{"featureType":"road.arterial","elementType":"geometry","stylers":[{"color":"#373737"}]},{"featureType":"road.highway","elementType":"geometry","stylers":[{"color":"#3c3c3c"}]},{"featureType":"road.highway.controlled_access","elementType":"geometry","stylers":[{"color":"#4e4e4e"}]},{"featureType":"road.local","elementType":"labels.text.fill","stylers":[{"color":"#616161"}]},{"featureType":"transit","elementType":"labels.text.fill","stylers":[{"color":"#757575"}]},{"featureType":"water","elementType":"geometry","stylers":[{"color":"#000000"}]},{"featureType":"water","elementType":"labels.text.fill","stylers":[{"color":"#3d3d3d"}]}],
+            night: [{"elementType":"geometry","stylers":[{"color":"#242f3e"}]},{"elementType":"labels.text.fill","stylers":[{"color":"#746855"}]},{"elementType":"labels.text.stroke","stylers":[{"color":"#242f3e"}]},{"featureType":"administrative.locality","elementType":"labels.text.fill","stylers":[{"color":"#d59563"}]},{"featureType":"poi","elementType":"labels.text.fill","stylers":[{"color":"#d59563"}]},{"featureType":"poi.park","elementType":"geometry","stylers":[{"color":"#263c3f"}]},{"featureType":"poi.park","elementType":"labels.text.fill","stylers":[{"color":"#6b9a76"}]},{"featureType":"road","elementType":"geometry","stylers":[{"color":"#38414e"}]},{"featureType":"road","elementType":"geometry.stroke","stylers":[{"color":"#212a37"}]},{"featureType":"road","elementType":"labels.text.fill","stylers":[{"color":"#9ca5b3"}]},{"featureType":"road.highway","elementType":"geometry","stylers":[{"color":"#746855"}]},{"featureType":"road.highway","elementType":"geometry.stroke","stylers":[{"color":"#1f2835"}]},{"featureType":"road.highway","elementType":"labels.text.fill","stylers":[{"color":"#f3d19c"}]},{"featureType":"transit","elementType":"geometry","stylers":[{"color":"#2f3948"}]},{"featureType":"transit.station","elementType":"labels.text.fill","stylers":[{"color":"#d59563"}]},{"featureType":"water","elementType":"geometry","stylers":[{"color":"#17263c"}]},{"featureType":"water","elementType":"labels.text.fill","stylers":[{"color":"#515c6d"}]},{"featureType":"water","elementType":"labels.text.stroke","stylers":[{"color":"#17263c"}]}],
+            lightDream: [{"elementType":"geometry","stylers":[{"color":"#f2f2f2"}]},{"elementType":"labels.text.fill","stylers":[{"color":"#616161"}]},{"elementType":"labels.text.stroke","stylers":[{"color":"#f5f5f5"}]},{"featureType":"administrative","elementType":"geometry.stroke","stylers":[{"color":"#c9b2a6"}]},{"featureType":"landscape.natural","elementType":"geometry","stylers":[{"color":"#e0e0e0"}]},{"featureType":"poi","elementType":"geometry","stylers":[{"color":"#eeeeee"}]},{"featureType":"road","elementType":"geometry","stylers":[{"color":"#ffffff"}]},{"featureType":"road.highway","elementType":"geometry","stylers":[{"color":"#dadada"}]},{"featureType":"water","elementType":"geometry.fill","stylers":[{"color":"#a0c4ff"}]}],
+            blueWater: [{"featureType":"water","elementType":"geometry","stylers":[{"color":"#193341"}]},{"featureType":"landscape","elementType":"geometry","stylers":[{"color":"#2c5a71"}]},{"featureType":"road","elementType":"geometry","stylers":[{"color":"#29768a"},{"lightness":-37}]},{"featureType":"poi","elementType":"geometry","stylers":[{"color":"#406d80"}]},{"featureType":"transit","elementType":"geometry","stylers":[{"color":"#406d80"}]},{"elementType":"labels.text.stroke","stylers":[{"visibility":"on"},{"color":"#3e606f"},{"weight":2},{"gamma":0.84}]},{"elementType":"labels.text.fill","stylers":[{"color":"#ffffff"}]},{"featureType":"administrative","elementType":"geometry","stylers":[{"weight":0.6},{"color":"#1a3541"}]},{"elementType":"labels.icon","stylers":[{"visibility":"off"}]},{"featureType":"poi.park","elementType":"geometry","stylers":[{"color":"#2c5a71"}]}]
+        };
+
+        function gm_authFailure(error) { 
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.innerHTML = `<span class="font-medium">שגיאת הרשאה למפתח API!</span> ודא שהפעלת את כל השירותים הנדרשים בחשבון Google Cloud שלך:
+            <ul class="mt-1.5 list-disc list-inside">
+                <li><b>Maps JavaScript API</b></li>
+                <li><b>Places API</b></li>
+                <li><b>Geocoding API</b></li>
+            </ul>
+             <a href="https://console.cloud.google.com/apis/library" target="_blank" class="font-bold text-blue-600 underline">פתח את ספריית ה-API</a>`;
+            errorDiv.classList.remove('hidden');
+        }
+
+        function initMap() {
+            document.getElementById('map').innerHTML = '';
+            document.getElementById('main-controls').classList.remove('hidden');
+
+            map = new google.maps.Map(document.getElementById('map'), {
+                center: { lat: 32.0853, lng: 34.7818 },
+                zoom: 13,
+                mapTypeControl: false, 
+                rotateControl: true, scaleControl: true, streetViewControl: false, fullscreenControl: false,
+                gestureHandling: 'greedy', 
+                zoomControlOptions: { position: google.maps.ControlPosition.LEFT_TOP }
+            });
+            
+            CustomLabel = class extends google.maps.OverlayView {
+                constructor(pos, text, styles) {
+                    super(); this.pos = pos; this.text = text; this.styles = styles; this.div = null; this.setMap(map);
+                }
+                onAdd() {
+                    this.div = document.createElement('div'); this.div.className = 'custom-label'; this.updateStyle();
+                    const panes = this.getPanes(); panes.floatPane.appendChild(this.div);
+                }
+                draw() {
+                    const projection = this.getProjection(); if (!projection) return;
+                    const sw = projection.fromLatLngToDivPixel(this.pos);
+                    this.div.style.left = `${sw.x}px`; this.div.style.top = `${sw.y}px`;
+                }
+                onRemove() { if (this.div) { this.div.parentNode.removeChild(this.div); this.div = null; } }
+                updateStyle() {
+                    if (!this.div) return; this.div.innerHTML = this.text;
+                    this.div.style.fontSize = `${this.styles.fontSize}px`; this.div.style.color = this.styles.color; this.div.style.background = this.styles.bgColor;
+                }
+                setOpacity(opacity) { if (this.div) this.div.style.opacity = opacity; }
+            }
+            setupToolbar();
+        }
+
+        function setupToolbar() {
+            const panelsContainer = document.getElementById('tool-panels-container');
+            const toolButtons = document.querySelectorAll('.tool-btn[data-panel]');
+            let activePanel = null;
+
+            function makePanelDraggable(panel) {
+                const handle = panel.querySelector('.drag-handle');
+                handle.onmousedown = function(e) {
+                    e.preventDefault();
+                    let shiftX = e.clientX - panel.getBoundingClientRect().left;
+                    let shiftY = e.clientY - panel.getBoundingClientRect().top;
+
+                    function moveAt(pageX, pageY) {
+                        panel.style.left = pageX - shiftX + 'px';
+                        panel.style.top = pageY - shiftY + 'px';
+                    }
+
+                    function onMouseMove(event) {
+                        moveAt(event.pageX, event.pageY);
+                    }
+
+                    document.addEventListener('mousemove', onMouseMove);
+                    handle.onmouseup = function() {
+                        document.removeEventListener('mousemove', onMouseMove);
+                        handle.onmouseup = null;
+                    };
+                };
+                 handle.ondragstart = () => false;
+            }
+
+            toolButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const panelId = btn.dataset.panel;
+                    if (activePanel && activePanel.id === panelId) {
+                        panelsContainer.innerHTML = ''; activePanel = null; btn.classList.remove('active'); return;
+                    }
+                    toolButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    const template = document.getElementById(`${panelId}-template`);
+                    panelsContainer.innerHTML = '';
+                    if (template) { 
+                        panelsContainer.appendChild(template.content.cloneNode(true));
+                        activePanel = panelsContainer.querySelector('div');
+                        activePanel.id = panelId;
+                        makePanelDraggable(activePanel);
+                        
+                        if (panelId === 'style-panel') setupStylePanel(activePanel);
+                        if (panelId === 'draw-panel') setupDrawPanel(activePanel);
+                        if (panelId === 'area-panel') setupAreaPanel(activePanel);
+                        if (panelId === 'poi-panel') setupPoiPanel(activePanel);
+                        if (panelId === 'camera-panel') setupCameraPanel(activePanel);
+                    }
+                });
+            });
+            
+             document.getElementById('terrain-toggle-btn').addEventListener('click', e => {
+                const btn = e.currentTarget;
+                btn.classList.toggle('active');
+                map.setMapTypeId(btn.classList.contains('active') ? 'terrain' : 'roadmap');
+            });
+
+             document.getElementById('labels-toggle-btn').addEventListener('click', e => {
+                const btn = e.currentTarget;
+                btn.classList.toggle('active');
+                const isHidden = btn.classList.contains('active');
+                btn.querySelector('.eye-open').classList.toggle('hidden', isHidden);
+                btn.querySelector('.eye-closed').classList.toggle('hidden', !isHidden);
+                
+                const newStyles = [...(map.get('styles') || [])];
+                const labelStyle = { elementType: "labels", stylers: [{ visibility: isHidden ? "off" : "on" }] };
+                
+                const existingLabelIndex = newStyles.findIndex(s => s.elementType === 'labels');
+                if (existingLabelIndex > -1) newStyles.splice(existingLabelIndex, 1);
+                
+                newStyles.push(labelStyle);
+                map.setOptions({ styles: newStyles });
+            });
+
+
+            document.getElementById('clear-all-btn').addEventListener('click', () => {
+                drawnShapes.forEach(s => { if(s.controlMarkers) s.controlMarkers.forEach(m => m.setMap(null)); s.setMap(null); });
+                customLabels.forEach(l => l.setMap(null));
+                customIcons.forEach(i => i.setMap(null));
+                Object.values(featureLayers).forEach(layer => layer.setMap(null));
+                drawnShapes = []; customLabels = []; customIcons = []; featureLayers = {};
+                clearAnimation();
+            });
+            
+             const previewBtn = document.getElementById('preview-btn');
+             if(previewBtn) {
+                previewBtn.addEventListener('click', enterPreviewMode);
+             }
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    exitPreviewMode();
+                }
+            });
+
+        }
+        
+        function setupStylePanel(panel){
+             panel.querySelectorAll('.style-option').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    map.setOptions({ styles: mapStyles[btn.dataset.style] });
+                    if (document.getElementById('labels-toggle-btn').classList.contains('active')) {
+                        const newStyles = [...(map.get('styles') || [])];
+                        newStyles.push({ elementType: "labels", stylers: [{ visibility: "off" }] });
+                        map.setOptions({ styles: newStyles });
+                    }
+                });
+            });
+        }
+
+        function setupDrawPanel(panel) {
+            let drawingManager = new google.maps.drawing.DrawingManager({
+                drawingMode: null, drawingControl: false,
+                polylineOptions: { strokeWeight: 3, strokeColor: '#FF0000', editable: false, clickable: false }
+            });
+            drawingManager.setMap(map);
+            
+            google.maps.event.addListener(drawingManager, 'polylinecomplete', polyline => {
+                const color = panel.querySelector('#line-color').value;
+                const weight = parseInt(panel.querySelector('#line-width').value);
+                polyline.setOptions({strokeColor: color, strokeWeight: weight});
+                addCurveControls(polyline);
+                drawnShapes.push(polyline);
+                drawingManager.setDrawingMode(null);
+                panel.querySelector('#draw-mode-line').classList.remove('active');
+            });
+
+            panel.querySelector('#draw-mode-line').addEventListener('click', (e) => {
+                e.target.classList.toggle('active');
+                if (e.target.classList.contains('active')) {
+                   drawingManager.setDrawingMode(google.maps.drawing.OverlayType.POLYLINE);
+                } else {
+                   drawingManager.setDrawingMode(null);
+                }
+            });
+            panel.querySelector('#animate-draw-btn').addEventListener('click', animateLineDrawing);
+        }
+        
+        function setupAreaPanel(panel) {
+            const countryLayer = new google.maps.FeatureLayer({
+                featureType: google.maps.FeatureType.COUNTRY,
+                map: map,
+                style: (params) => {
+                    if (featureLayers[params.feature.placeId]) {
+                        return featureLayers[params.feature.placeId];
+                    }
+                }
+            });
+            
+            google.maps.event.addListener(countryLayer, 'click', (e) => {
+                const placeId = e.features[0].placeId;
+                if (featureLayers[placeId]) {
+                    delete featureLayers[placeId];
+                } else {
+                    const color = panel.querySelector('#area-color').value;
+                    const opacity = parseFloat(panel.querySelector('#area-opacity').value);
+                    featureLayers[placeId] = {
+                        fillColor: color,
+                        fillOpacity: opacity,
+                        strokeWeight: 0
+                    };
+                }
+                countryLayer.style = countryLayer.style; 
+            });
+
+             panel.querySelector('#area-opacity').addEventListener('input', e => {
+                panel.querySelector('#area-opacity-value').innerText = e.target.value;
+            });
+             panel.querySelector('#clear-areas-btn').addEventListener('click', () => {
+                featureLayers = {};
+                countryLayer.style = null;
+             });
+        }
+
+        function setupPoiPanel(panel) {
+            const searchInput = panel.querySelector('#poi-search-input');
+            const autocomplete = new google.maps.places.Autocomplete(searchInput);
+            let selectedPlace = null;
+            let selectedIconSvg = panel.querySelector('#poi-icon-picker button').dataset.iconSvg;
+
+            autocomplete.addListener('place_changed', () => {
+                selectedPlace = autocomplete.getPlace();
+            });
+
+            panel.querySelectorAll('#poi-icon-picker button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    panel.querySelectorAll('#poi-icon-picker button').forEach(b => b.classList.remove('active', 'border-indigo-500'));
+                    btn.classList.add('active', 'border-indigo-500');
+                    selectedIconSvg = btn.dataset.iconSvg;
+                });
+            });
+
+
+            panel.querySelector('#add-poi-btn').addEventListener('click', () => {
+                if (!selectedPlace || !selectedPlace.geometry) {
+                    alert('אנא חפש ובחר מיקום מהרשימה תחילה.');
+                    return;
+                }
+
+                const title = panel.querySelector('#poi-title-input').value || selectedPlace.name;
+                const location = selectedPlace.geometry.location;
+
+                const icon = {
+                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(selectedIconSvg.replace('%COLOR%', '#4285F4')),
+                    scaledSize: new google.maps.Size(48, 48),
+                    anchor: new google.maps.Point(24, 48),
+                };
+                
+                const poiMarker = new google.maps.Marker({
+                    position: location,
+                    map: map,
+                    icon: icon,
+                });
+
+                if (title) {
+                    poiMarker.labelInstance = new CustomLabel(location, title, {fontSize: '14', color: '#000', bgColor: 'rgba(255,255,255,0.8)'});
+                }
+                
+                map.setCenter(location);
+            });
+        }
+        
+        function setupCameraPanel(panel){
+            panel.querySelector('#add-keyframe-btn').addEventListener('click', addKeyframe);
+            panel.querySelector('#play-animation-btn').addEventListener('click', playAnimation);
+            panel.querySelector('#clear-animation-btn').addEventListener('click', clearAnimation);
+            panel.querySelector('#animation-duration').addEventListener('input', e => {
+                panel.querySelector('#animation-duration-value').innerText = e.target.value;
+                animationDuration = e.target.value * 1000;
+            });
+            updateKeyframesList();
+        }
+
+        function addCurveControls(polyline) {
+            const path = polyline.getPath();
+            polyline.originalPath = path.getArray().slice(); 
+            polyline.controlMarkers = [];
+            
+            const updateCurve = () => {
+                const newPath = [];
+                const original = polyline.originalPath;
+                if (original.length < 2) return;
+                newPath.push(original[0]);
+                for (let i = 0; i < original.length - 1; i++) {
+                    const startPoint = original[i];
+                    const endPoint = original[i+1];
+                    const controlPoint = polyline.controlMarkers[i].getPosition();
+                    for (let t = 0.02; t <= 1; t += 0.02) {
+                        const lat = (1-t)*(1-t)*startPoint.lat() + 2*(1-t)*t*controlPoint.lat() + t*t*endPoint.lat();
+                        const lng = (1-t)*(1-t)*startPoint.lng() + 2*(1-t)*t*controlPoint.lng() + t*t*endPoint.lng();
+                        newPath.push(new google.maps.LatLng(lat, lng));
+                    }
+                }
+                polyline.setPath(newPath);
+                polyline.curvedPath = newPath; 
+            };
+
+            for (let i = 0; i < polyline.originalPath.length - 1; i++) {
+                const midpoint = google.maps.geometry.spherical.interpolate(polyline.originalPath[i], polyline.originalPath[i+1], 0.5);
+                const controlMarker = new google.maps.Marker({
+                    position: midpoint, map: map, draggable: true,
+                    icon: { path: google.maps.SymbolPath.CIRCLE, scale: 5, fillColor: '#FFF', fillOpacity: 0.5, strokeColor: '#000', strokeWeight: 1 }
+                });
+                polyline.controlMarkers.push(controlMarker);
+                google.maps.event.addListener(controlMarker, 'drag', updateCurve);
+            }
+        }
+
+        function animateLineDrawing() {
+            let speed = document.getElementById('line-animation-speed')?.value || 45;
+            drawnShapes.forEach(shape => {
+                if (!shape.getPath) return;
+                const path_to_animate = shape.curvedPath || shape.originalPath || shape.getPath().getArray();
+                const tempPath = [];
+                shape.setPath(tempPath);
+                let i = 0;
+                const animation = setInterval(() => {
+                    if (i < path_to_animate.length) {
+                        tempPath.push(path_to_animate[i]);
+                        shape.setPath(tempPath);
+                        i++;
+                    } else {
+                        clearInterval(animation);
+                        shape.setPath(path_to_animate); 
+                    }
+                }, speed); 
+            });
+        }
+        
+        function addKeyframe() {
+            if (animationPath.length >= 10) { alert('ניתן להוסיף עד 10 נקודות מפתח.'); return; }
+            const titleInput = document.getElementById('keyframe-title');
+            animationPath.push({
+                camera: { zoom: map.getZoom(), center: map.getCenter(), heading: map.getHeading() || 0, tilt: map.getTilt() || 0 },
+                label: titleInput.value ? { text: titleInput.value, styles: { color: '#000', bgColor: '#FFF', fontSize: '18' } } : null,
+            });
+            titleInput.value = '';
+            updateKeyframesList();
+        }
+        
+        function updateKeyframesList(){
+            const listEl = document.getElementById('keyframes-list'); if(!listEl) return;
+            listEl.innerHTML = '';
+            animationPath.forEach((kf, index) => {
+                const item = document.createElement('div');
+                item.className = 'flex justify-between items-center text-sm p-1.5 bg-gray-100 rounded-md';
+                item.innerHTML = `<span><b>נקודה ${index + 1}:</b> ${kf.label ? kf.label.text.substring(0, 15) + '...' : '<i>ללא כותרת</i>'}</span><button data-index="${index}" class="delete-kf-btn text-red-500 hover:text-red-700 font-bold">✕</button>`;
+                listEl.appendChild(item);
+            });
+            
+            document.querySelectorAll('.delete-kf-btn').forEach(btn => btn.addEventListener('click', e => {
+                animationPath.splice(e.target.dataset.index, 1);
+                updateKeyframesList();
+            }));
+            
+            const cameraPanel = document.getElementById('camera-panel');
+            if (cameraPanel) {
+                const canPlay = animationPath.length >= 2;
+                cameraPanel.querySelector('#add-keyframe-btn').disabled = animationPath.length >= 10;
+                cameraPanel.querySelector('#play-animation-btn').disabled = !canPlay;
+                cameraPanel.querySelector('#clear-animation-btn').disabled = animationPath.length === 0;
+            }
+        }
+        
+        function playAnimation() {
+            if (animationPath.length < 2 || animationFrameId) return;
+            let keyframeIndex = 0;
+            let startTime = null;
+            let currentLabel = null;
+            const duration = animationDuration;
+            const easeInOut = (t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+            animateLineDrawing(); 
+
+            function animate(timestamp) {
+                if (!startTime) startTime = timestamp;
+                const elapsed = timestamp - startTime;
+                if (keyframeIndex >= animationPath.length - 1) {
+                    if (currentLabel) currentLabel.setMap(null);
+                    cancelAnimationFrame(animationFrameId); animationFrameId = null; return;
+                }
+                const start = animationPath[keyframeIndex]; const end = animationPath[keyframeIndex + 1];
+                const progress = easeInOut(Math.min(elapsed / duration, 1));
+                map.moveCamera({
+                    center: google.maps.geometry.spherical.interpolate(start.camera.center, end.camera.center, progress),
+                    zoom: start.camera.zoom + (end.camera.zoom - start.camera.zoom) * progress,
+                    heading: start.camera.heading + (end.camera.heading - start.camera.heading) * progress,
+                    tilt: start.camera.tilt + (end.camera.tilt - start.camera.tilt) * progress,
+                });
+                
+                if (progress >= 1) { keyframeIndex++; startTime = null; }
+                animationFrameId = requestAnimationFrame(animate);
+            }
+            animationFrameId = requestAnimationFrame(animate);
+        }
+        
+        function clearAnimation(){
+             if (animationFrameId) cancelAnimationFrame(animationFrameId);
+             animationFrameId = null;
+             animationPath = [];
+             updateKeyframesList();
+        }
+        
+        function enterPreviewMode() {
+            document.getElementById('app-header').style.transform = 'translateY(-100%)';
+            document.getElementById('tool-panels-container').innerHTML = '';
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('preview-overlay').classList.add('visible');
+
+            setTimeout(() => {
+                if (document.getElementById('preview-overlay').classList.contains('visible')) {
+                    playAnimation();
+                }
+            }, 2000);
+        }
+
+        function exitPreviewMode() {
+            document.getElementById('app-header').style.transform = 'translateY(0)';
+            document.getElementById('preview-overlay').classList.remove('visible');
+            clearAnimation();
+        }
+    </script>
+    
+    <script async defer
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAFpKGm1CTxBbACyb0mP_PgnxAWJCM-Edc&callback=initMap&libraries=drawing,geometry,places&v=beta">
+    </script>
+
+</body>
+</html>
