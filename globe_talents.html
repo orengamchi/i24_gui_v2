@@ -1,0 +1,391 @@
+<!-- index.html - גלריה תלת-ממדית סייבר עם HUD משודרג כולל שעון -->
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>גלריה תלת-ממדית סייבר דינמית</title>
+  <style>
+    /* בסיס ורספונסיביות */
+    html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#000; touch-action:none; }
+    canvas { display:block; width:100%; height:100%; }
+
+    /* HUD וגילוי/הסתרה - מוסתר לחלוטין */
+    #hudTab {
+      display: none; /* הסתרת כפתור ה-HUD לחלוטין */
+    }
+
+    #hud {
+      display: none; /* הסתרת לוח ה-HUD לחלוטין */
+    }
+    /* כל שאר סגנונות ה-HUD המקוריים נשארים אך אינם רלוונטיים כשהאלמנט מוסתר */
+    #hudTab {
+      position:absolute; top:8px; right:8px;
+      width:32px; height:32px;
+      background:rgba(0,0,0,0.6); border:2px solid #0f0;
+      border-radius:4px 0 0 4px; z-index:101;
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer;
+    }
+    #hudTab .icon { color:#0f0; font-size:20px; text-shadow:0 0 5px #0f0; }
+
+    #hud {
+      position:absolute; top:8px; right:40px;
+      width:calc(100% - 56px); max-width:320px; max-height:90vh; overflow-y:auto;
+      background:rgba(0,0,0,0.6); border:2px solid #0f0; border-radius:8px;
+      padding:8px; box-sizing:border-box;
+      font-family:monospace; font-size:14px; color:#0f0; z-index:100;
+    }
+    #hud.hidden { display:none; }
+    #hud label { display:flex; align-items:center; margin:6px 0; }
+    #hud label .icon { margin-left:6px; color:#0f0; text-shadow:0 0 5px #0f0; }
+    #hud label span { flex:1; }
+    #hud input[type=range] {
+      -webkit-appearance:none; width:100%; height:8px; border-radius:4px;
+      background:linear-gradient(to right, #0f0 0%, #f00 100%);
+      outline:none; margin-top:4px;
+    }
+    #hud input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance:none; width:16px; height:16px; border-radius:50%; background:#0f0; cursor:pointer; border:2px solid #000;
+    }
+    #hud input[type=range]::-moz-range-thumb {
+      width:16px; height:16px; border-radius:50%; background:#0f0; cursor:pointer; border:2px solid #000;
+    }
+
+    /* שעון ותאריך */
+    #clock {
+      text-align:center; margin:8px 0;
+      font-family:monospace; font-size:16px; color:#ff0;
+      text-shadow:0 0 8px #ff0;
+    }
+
+    /* מודאל */
+    .modal { position:fixed; top:0; left:0; width:100%; height:100%; display:flex;
+      align-items:center; justify-content:center;
+      background:rgba(0,0,0,1); visibility:hidden; opacity:0; transition:opacity .4s; z-index:50;
+    }
+    .modal.visible { visibility:visible; opacity:1; }
+    .modal img {
+      max-width:90%; max-height:90%; border-radius:8px;
+      transform:scale(0.7); opacity:0;
+      transition:transform .4s ease, opacity .4s ease;
+      box-shadow:0 0 20px #0f0;
+    }
+    .modal.visible img { transform:scale(1); opacity:1; }
+
+    /* טקסטים סייבר */
+    .cyber-text { position:absolute; color:#0f0; font-family:'Courier New',monospace; font-size:16px;
+      pointer-events:none; animation:flicker var(--blinkSpeed,2s) infinite; opacity:0.6;
+    }
+    @keyframes flicker { 0%,100%{opacity:0.2;} 50%{opacity:0.8;} }
+  </style>
+</head>
+<body>
+  <!-- לחצן HUD עם אייקון סייבר -->
+  <div id="hudTab"><span class="icon">⚙</span></div>
+  <!-- HUD -->
+  <div id="hud">
+    <div id="clock"></div>
+    <label><span class="icon">📁</span><span>קובץ: <span id="fileCount">21</span></span><input id="fileInputHud" type="file" accept="image/*" multiple></label>
+    <label><span class="icon">🔄</span><span>מהירות סיבוב <span id="rotateVal">0.0004</span></span><input id="rotateSlider" type="range" min="0" max="0.02" step="0.0001" value="0.0004"></label>
+    <label><span class="icon">✨</span><span>מהירות כוכבים <span id="starVal">0.0042</span></span><input id="starSlider" type="range" min="0" max="0.01" step="0.0001" value="0.0042"></label>
+    <label><span class="icon">⚡</span><span>מהירות הבהוב <span id="blinkVal">0.026</span></span><input id="blinkSlider" type="range" min="0" max="0.05" step="0.001" value="0.026"></label>
+    <label><span class="icon">🔍</span><span>גודל גלובלי <span id="scaleVal">0.6</span></span><input id="scaleSlider" type="range" min="0.1" max="2" step="0.1" value="0.6"></label>
+    <label><span class="icon">📐</span><span>עובי מסגרות <span id="frameWidthVal">1</span></span><input id="frameWidthSlider" type="range" min="1" max="12" step="1" value="1"></label>
+    <label><span class="icon">☁️</span><span>שקיפות מסגרות <span id="frameOpacityVal">0</span></span><input id="frameOpacitySlider" type="range" min="0" max="1" step="0.1" value="0"></label>
+    <label><span class="icon">⭐</span><span>גודל כוכבים <span id="starSizeVal">5.5</span></span><input id="starSizeSlider" type="range" min="0.5" max="8" step="0.5" value="5.5"></label>
+    <label><span class="icon">🌌</span><span>מספר כוכבים <span id="starCountVal">2000</span></span><input id="starCountSlider" type="range" min="100" max="3000" step="100" value="2000"></label>
+    <label><span class="icon">🌠</span><span>שקיפות תמונות <span id="imgOpacityVal">1</span></span><input id="imgOpacitySlider" type="range" min="0" max="1" step="0.1" value="1"></label>
+  </div>
+
+  <!-- מודאל להצגת תמונה -->
+  <div id="modal" class="modal"><img id="modalImg" src="" onerror="this.src='https://placehold.co/400x300/FF0000/FFFFFF?text=Error'"></div>
+
+  <!-- ספריות Three.js -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/controls/OrbitControls.js"></script>
+  <script>
+    // הגדרות ראשוניות למשתנים
+    const maxImages = 333; // מספר התמונות המקסימלי שניתן לטעון
+    let autoRotateSpeed = 0.0004; // מהירות הסיבוב האוטומטי של הגלריה
+    let starRotSpeed = 0.0042; // מהירות סיבוב הכוכבים
+    let blinkSpeed = 0.026; // מהירות הבהוב המסגרות
+    let globalScale = 0.6; // קנה מידה גלובלי של הסצנה
+    let frameWidth = 1; // עובי המסגרות סביב התמונות
+    let frameOpacity = 0; // שקיפות המסגרות
+    let starSize = 5.5; // גודל הכוכבים
+    let starCount = 2000; // מספר הכוכבים
+    let imgOpacity = 1; // שקיפות התמונות
+
+    // מערך לאחסון פרטי התמונות. אלו התמונות שנטענות כברירת מחדל.
+    let imageItems = [
+      { url: "https://raw.githubusercontent.com/orengamchi/i24_gui_v2/main/%D7%A9%D7%A8%D7%95%D7%9F_%D7%A0%D7%99%D7%A1%D7%99%D7%9D.png", name: "שרון_ניסים" },
+      { url: "https://raw.githubusercontent.com/orengamchi/i24_gui_v2/main/%D7%A9%D7%A8%D7%95%D7%9F_%D7%92%D7%9C_THUMB.png", name: "שרון_גל_THUMB" },
+      { url: "https://raw.githubusercontent.com/orengamchi/i24_gui_v2/main/%D7%A6%D7%91%D7%99%D7%A7%D7%94_%D7%99%D7%97%D7%96%D7%A7%D7%9C%D7%99.png", name: "צביקה_יחזקאלי" },
+      { url: "https://raw.githubusercontent.com/orengamchi/i24_gui_v2/main/%D7%A1%D7%99%D7%A8%D7%99%D7%9C_%D7%A2%D7%9E%D7%A8.png", name: "סיריל_עמר" },
+      { url: "https://raw.githubusercontent.com/orengamchi/i24_gui_v2/main/%D7%A1%D7%99%D7%95%D7%95%D7%9F_%D7%A0%D7%93%D7%91_%D7%92%D7%93%D7%95%D7%9C.png", name: "סיוון_נדב_גדול" },
+      { url: "https://raw.githubusercontent.com/orengamchi/i24_gui_v2/main/%D7%A1%D7%99%D7%95%D7%95%D7%9F_%D7%A0%D7%93%D7%91.png", name: "סיוון_נדב" },
+      { url: "https://raw.githubusercontent.com/orengamchi/i24_gui_v2/main/%D7%A0%D7%99%D7%91_%D7%92%D7%9C%D7%91%D7%95%D7%A2.png", name: "ניב_גלבוע" },
+      { url: "https://raw.githubusercontent.com/orengamchi/i24_gui_v2/main/%D7%A0%D7%95%D7%95%D7%94_%D7%93%D7%A8%D7%95%D7%9E%D7%99_%D7%92%D7%93%D7%95%D7%9C.png", name: "נווה_דרומי_גדול" },
+      { url: "https://raw.githubusercontent.com/orengamchi/i24_gui_v2/main/%D7%9E%D7%99%D7%A8%D7%99_%D7%9E%D7%99%D7%9B%D7%90%D7%9C%D7%91.png", name: "מירי_מיכאלי_גדול" },
+      { url: "https://raw.githubusercontent.com/orengamchi/i24_gui_v2/main/%D7%9E%D7%99%D7%A8%D7%99_%D7%9E%D7%99%D7%9B%D7%90%D7%9C%D7%99.png", name: "מירי_מיכאלי" },
+      { url: "https://raw.githubusercontent.com/orengamchi/i24_gui_v2/main/%D7%99%D7%A0%D7%95%D7%9F_%D7%9E%D7%99%D7%9C%D7%A1.png", name: "ינון_מילס" },
+      { url: "https://raw.githubusercontent.com/orengamchi/i24_gui_v2/main/%D7%99%D7%95%D7%A1%D7%99_%D7%99%D7%94%D7%95%D7%A9%D7%95%D7%A2.png", name: "יוסי_יהושוע" },
+      { url: "https://raw.githubusercontent.com/orengamchi/i24_gui_v2/main/%D7%97%D7%92%D7%99_%D7%92%D7%95%D7%9C%D7%9F.png", name: "חגי_גולן" },
+      { url: "https://raw.githubusercontent.com/orengamchi/i24_gui_v2/main/%D7%93%D7%A0%D7%99%D7%90%D7%9C_%D7%A8%D7%95%D7%98_%D7%92%D7%93%D7%95%D7%9C.png", name: "דניאל_רוט_גדול" },
+      { url: "https://raw.githubusercontent.com/orengamchi/i24_gui_v2/main/%D7%93%D7%A0%D7%99%D7%90%D7%9C_%D7%A8%D7%95%D7%98.png", name: "דניאל_רוט" },
+      { url: "https://raw.githubusercontent.com/orengamchi/i24_gui_v2/main/%D7%90%D7%9C%D7%99%D7%A8%D7%96_%D7%A9%D7%93%D7%94_%D7%92%D7%93%D7%95%D7%9C.png", name: "אלירז_שדה_גדול" },
+      { url: "https://raw.githubusercontent.com/orengamchi/i24_gui_v2/main/%D7%90%D7%9C%D7%99%D7%A8%D7%96_%D7%A9%D7%93%D7%94.png", name: "אלירז_שדה" },
+      { url: "https://raw.githubusercontent.com/orengamchi/i24_gui_v2/main/%D7%90%D7%9C%D7%99_%D7%94%D7%95%D7%9B%D7%A0%D7%91%D7%A8%D7%92.png", name: "אלי_הוכנברג" },
+      { url: "https://raw.githubusercontent.com/orengamchi/i24_gui_v2/main/%D7%90%D7%95%D7%A8%D7%99_%D7%A7%D7%95%D7%95%D7%90%D7%9C.png", name: "אורי_קוואל" },
+      { url: "https://cdn.jsdelivr.net/gh/orengamchi/i24_gui_v2@main/%D7%9E%D7%99%D7%9B%D7%90%D7%9C_%D7%A8%D7%91%D7%99%D7%A0%D7%95%D7%91%D7%99%D7%A5_THUMB.png", name: "מיכל_רבינוביץ" }
+    ];
+
+    // הגדרת סצנת Three.js
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 2000);
+    camera.position.z = 350; // מיקום המצלמה
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(innerWidth, innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // הגדרת שליטה במצלמה (OrbitControls)
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true; // הפעלת שיכוך לתנועה חלקה יותר
+    controls.autoRotate = false; // כיבוי סיבוב אוטומטי של המצלמה
+
+    // Raycaster לזיהוי לחיצות על אובייקטים
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    // קבוצה לאחסון כל התמונות והמסגרות, ומערך למסגרות בלבד
+    const group = new THREE.Group();
+    const frames = [];
+    let stars; // משתנה לאובייקט הכוכבים
+
+    // פונקציה לעדכון השעון הדיגיטלי
+    function updateClock() {
+      const now = new Date();
+      const date = now.toLocaleDateString('he-IL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      const time = now.toLocaleTimeString('he-IL');
+      document.getElementById('clock').textContent = `${date} ${time}`;
+    }
+    // הפעלת עדכון השעון כל שנייה ועדכון ראשוני
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // בניית הסצנה, הגדרת ה-HUD והתחלת האנימציה
+    buildScene();
+    setupHUD();
+    animate();
+
+    // פונקציה לבניית (או בנייה מחדש) של הסצנה התלת-ממדית
+    function buildScene() {
+      group.clear(); // ניקוי הקבוצה הנוכחית
+      frames.length = 0; // איפוס מערך המסגרות
+      if (stars) scene.remove(stars); // הסרת הכוכבים הקיימים אם ישנם
+
+      // יצירת מערך כוכבים רנדומלי
+      const geom = new THREE.BufferGeometry(), pos = new Float32Array(starCount * 3);
+      for (let i = 0; i < starCount; i++) {
+        pos[i * 3] = (Math.random() - 0.5) * 2000;
+        pos[i * 3 + 1] = (Math.random() - 0.5) * 2000;
+        pos[i * 3 + 2] = (Math.random() - 0.5) * 2000;
+      }
+      geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      stars = new THREE.Points(geom, new THREE.PointsMaterial({ color: 0xffffff, size: starSize, transparent: true, opacity: 1 }));
+      scene.add(stars);
+
+      // חישוב גודל התמונות בהתבסס על מספרן
+      const baseSize = 60, factor = Math.sqrt(maxImages / imageItems.length);
+      const w = baseSize * factor * globalScale, h = w * 0.75; // רוחב וגובה התמונה (יחס 4:3)
+
+      const radius = 200; // רדיוס הגלובוס
+      const phiStep = Math.PI * (3 - Math.sqrt(5)); // מרווח זוויתי לפי פיבונאצ'י כדי לפזר את התמונות באופן אחיד
+
+      // יצירת תמונות, מסגרות וטקסט עבור כל פריט
+      imageItems.forEach((item, i) => {
+        // חישוב מיקום התמונה על כדור
+        const y = 1 - (i / (imageItems.length - 1)) * 2;
+        const rY = Math.sqrt(1 - y * y);
+        const theta = phiStep * i;
+        const x = Math.cos(theta) * radius * rY;
+        const z = Math.sin(theta) * radius * rY;
+
+        // יצירת מישור לתמונה
+        const geo = new THREE.PlaneGeometry(w, h);
+        const textureLoader = new THREE.TextureLoader(); // יצירת טוען טקסטורות
+        textureLoader.crossOrigin = 'anonymous'; // הגדרה לטיפול בבעיות CORS
+        const mat = new THREE.MeshBasicMaterial({
+          map: textureLoader.load(
+            item.url,
+            // onLoad callback
+            (texture) => {
+              console.log(`Image loaded successfully: ${item.name} from ${item.url}`);
+            },
+            // onProgress callback (optional)
+            undefined,
+            // onError callback - ידפיס שגיאה לקונסולת המפתחים אם הטעינה נכשלת
+            (error) => {
+              console.error(`Error loading image ${item.name} from ${item.url}:`, error);
+            }
+          ),
+          side: THREE.DoubleSide,
+          transparent: true,
+          opacity: imgOpacity
+        });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(x, y * radius, z);
+        mesh.lookAt(0, 0, 0); // סיבוב התמונה שתפנה למרכז
+        mesh.userData = { url: item.url }; // שמירת ה-URL לשימוש במודאל
+        group.add(mesh);
+
+        // יצירת מסגרת לתמונה
+        const edge = new THREE.EdgesGeometry(geo);
+        const eMat = new THREE.LineBasicMaterial({ color: 0x0f0, linewidth: frameWidth, transparent: true, opacity: frameOpacity });
+        const frame = new THREE.LineSegments(edge, eMat);
+        frame.position.copy(mesh.position);
+        frame.rotation.copy(mesh.rotation);
+        group.add(frame);
+        frames.push(frame); // שמירה במערך המסגרות להבהוב
+
+        // יצירת טקסט שם התמונה מעל התמונה
+        const cvs = document.createElement('canvas');
+        cvs.width = 256;
+        cvs.height = 64;
+        const ctx = cvs.getContext('2d');
+        ctx.font = '24px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#f00';
+        ctx.shadowColor = '#f00';
+        ctx.shadowBlur = 10;
+        ctx.fillText(item.name, 128, 32);
+        const txt = new THREE.CanvasTexture(cvs);
+        const sprMat = new THREE.SpriteMaterial({ map: txt, transparent: true });
+        const spr = new THREE.Sprite(sprMat);
+        spr.scale.set(w, h * 0.25, 1);
+        spr.position.set(x, y * radius - h / 2 - 20, z); // מיקום הטקסט מתחת לתמונה
+        spr.lookAt(camera.position); // הטקסט תמיד יפנה למצלמה
+        group.add(spr);
+      });
+      scene.add(group);
+      createCyberTexts(); // יצירת טקסטים אקראיים בסצנה
+    }
+
+    // אירוע לחיצה על כפתור ה-HUD להצגה/הסתרה
+    document.getElementById('hudTab').addEventListener('click', () => {
+      document.getElementById('hud').classList.toggle('hidden');
+    });
+
+    // פונקציה ליצירת טקסטים "סייבר" אקראיים על המסך
+    function createCyberTexts() {
+      // הסרת טקסטים קיימים
+      document.querySelectorAll('.cyber-text').forEach(e => e.remove());
+      const samples = ['01010101', 'H4CK3R', 'CY8ER', '▓▓▓▓', 'ᚠᛟᛋ', 'BO0T', 'C0D3', 'SYS', '███', 'NE0N'];
+      samples.forEach((s, i) => {
+        const el = document.createElement('div');
+        el.className = 'cyber-text';
+        el.textContent = s;
+        el.style.top = Math.random() * 90 + '%';
+        el.style.left = Math.random() * 90 + '%';
+        document.body.appendChild(el);
+      });
+      // הוספת טקסט קבוע למיתוג
+      const fix = document.createElement('div');
+      fix.className = 'cyber-text';
+      fix.textContent = 'orengamchi.com';
+      fix.style.color = '#ff0';
+      fix.style.top = '5%';
+      fix.style.left = '5%';
+      fix.style.animation = 'none'; // ללא הבהוב
+      document.body.appendChild(fix);
+    }
+
+    // פונקציה להגדרת בקרות ה-HUD
+    function setupHUD() {
+      // עדכון מספר הקבצים המוצגים
+      document.getElementById('fileCount').textContent = imageItems.length;
+      // טיפול בהעלאת קבצים חדשים
+      document.getElementById('fileInputHud').addEventListener('change', e => {
+        const files = Array.from(e.target.files).slice(0, maxImages);
+        let arr = [], l = 0;
+        if (files.length === 0) return; // אם לא נבחרו קבצים, צא
+        files.forEach(f => {
+          const r = new FileReader();
+          r.onload = ev => {
+            arr.push({ url: ev.target.result, name: f.name });
+            l++;
+            if (l === files.length) {
+              imageItems = arr;
+              document.getElementById('fileCount').textContent = imageItems.length;
+              buildScene(); // בנייה מחדש של הסצנה עם התמונות החדשות
+            }
+          };
+          r.readAsDataURL(f); // קריאת הקובץ כ-Data URL
+        });
+      });
+
+      // מיפוי הסליידרים לפונקציות העדכון שלהם
+      const map = {
+        rotateSlider: v => autoRotateSpeed = v,
+        starSlider: v => starRotSpeed = v,
+        blinkSlider: v => blinkSpeed = v,
+        scaleSlider: v => { globalScale = v; buildScene(); }, // דורש בנייה מחדש
+        frameWidthSlider: v => { frameWidth = v; buildScene(); }, // דורש בנייה מחדש
+        frameOpacitySlider: v => frameOpacity = v,
+        starSizeSlider: v => { starSize = v; if (stars) stars.material.size = v; }, // עדכון ישיר
+        starCountSlider: v => { starCount = v; buildScene(); }, // דורש בנייה מחדש
+        imgOpacitySlider: v => { imgOpacity = v; buildScene(); } // דורש בנייה מחדש
+      };
+      // לולאה על כל הסליידרים והצמדת אירועים
+      Object.entries(map).forEach(([id, fn]) => {
+        const inp = document.getElementById(id),
+              val = document.getElementById(id.replace('Slider', 'Val'));
+        inp.addEventListener('input', e => {
+          const v = parseFloat(e.target.value);
+          fn(v); // הפעלת פונקציית העדכון
+          val.textContent = v; // עדכון ערך התצוגה
+        });
+        val.textContent = inp.value; // עדכון ערך ראשוני
+      });
+    }
+
+    // פונקציית האנימציה הראשית
+    function animate() {
+      requestAnimationFrame(animate); // קריאה חוזרת לפונקציה
+      group.rotation.y += autoRotateSpeed; // סיבוב הגלריה
+      if (stars) stars.rotation.y += starRotSpeed; // סיבוב הכוכבים
+      // הבהוב המסגרות
+      frames.forEach((f, i) => f.material.opacity = frameOpacity + 0.3 * Math.sin(Date.now() * blinkSpeed + i));
+      controls.update(); // עדכון בקרות המצלמה (לשיכוך)
+      renderer.render(scene, camera); // רינדור הסצנה
+    }
+
+    // אירוע לחיצה כפולה לפתיחת/סגירת מודאל התמונה
+    window.addEventListener('dblclick', e => {
+      e.preventDefault();
+      const m = document.getElementById('modal');
+      if (m.classList.contains('visible')) {
+        m.classList.remove('visible'); // סגירת המודאל אם הוא פתוח
+      } else {
+        // זיהוי אובייקט במרחב התלת-ממדי בלחיצה כפולה
+        mouse.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+        raycaster.setFromCamera(mouse, camera);
+        const hit = raycaster.intersectObjects(group.children.filter(o => o.userData)); // סינון רק אובייקטים עם userData (התמונות)
+        if (hit.length) {
+          document.getElementById('modalImg').src = hit[0].object.userData.url; // הצגת התמונה במודאל
+          m.classList.add('visible'); // פתיחת המודאל
+        }
+      }
+    });
+
+    // אירוע שינוי גודל חלון - להתאמה רספונסיבית
+    window.addEventListener('resize', () => {
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+    });
+  </script>
+</body>
+</html>
