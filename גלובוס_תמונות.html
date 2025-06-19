@@ -1,4 +1,4 @@
-<!-- index.html - גלריה תלת-ממדית סייבר עם HUD משודרג כולל שעון -->
+<!-- index.html - גלריה תלת-ממדית סייבר עם HUD מופשט (שעון והעלאת קבצים בלבד) -->
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -32,17 +32,6 @@
     #hud label { display:flex; align-items:center; margin:6px 0; }
     #hud label .icon { margin-left:6px; color:#0f0; text-shadow:0 0 5px #0f0; }
     #hud label span { flex:1; }
-    #hud input[type=range] {
-      -webkit-appearance:none; width:100%; height:8px; border-radius:4px;
-      background:linear-gradient(to right, #0f0 0%, #f00 100%);
-      outline:none; margin-top:4px;
-    }
-    #hud input[type=range]::-webkit-slider-thumb {
-      -webkit-appearance:none; width:16px; height:16px; border-radius:50%; background:#0f0; cursor:pointer; border:2px solid #000;
-    }
-    #hud input[type=range]::-moz-range-thumb {
-      width:16px; height:16px; border-radius:50%; background:#0f0; cursor:pointer; border:2px solid #000;
-    }
     #hud input[type="file"] {
         color: #0f0;
         background-color: rgba(0,255,0,0.1);
@@ -61,7 +50,6 @@
         cursor: pointer;
     }
 
-
     /* שעון ותאריך */
     #clock {
       text-align:center; margin:8px 0;
@@ -72,20 +60,20 @@
     /* מודאל */
     .modal { position:fixed; top:0; left:0; width:100%; height:100%; display:flex;
       align-items:center; justify-content:center;
-      background:rgba(0,0,0,0.9); visibility:hidden; opacity:0; transition:opacity .4s; z-index:1050; /* Increased z-index */
+      background:rgba(0,0,0,0.9); visibility:hidden; opacity:0; transition:opacity .4s; z-index:1050;
     }
     .modal.visible { visibility:visible; opacity:1; }
     .modal img {
       max-width:90%; max-height:90%; border-radius:8px;
       transform:scale(0.7); opacity:0;
       transition:transform .4s ease, opacity .4s ease;
-      box-shadow:0 0 20px #0f0, 0 0 40px #0f0; /* Enhanced shadow */
+      box-shadow:0 0 20px #0f0, 0 0 40px #0f0;
     }
     .modal.visible img { transform:scale(1); opacity:1; }
 
     /* טקסטים סייבר */
     .cyber-text { position:absolute; color:#0f0; font-family:'Courier New',monospace; font-size:16px;
-      pointer-events:none; animation:flicker 2s infinite; opacity:0.6; /* Removed var(--blinkSpeed) for CSS animation */
+      pointer-events:none; animation:flicker 2s infinite; opacity:0.6;
     }
     @keyframes flicker { 0%,100%{opacity:0.2;} 50%{opacity:0.8;} }
   </style>
@@ -93,19 +81,11 @@
 <body>
   <!-- לחצן HUD עם אייקון סייבר -->
   <div id="hudTab"><span class="icon">⚙</span></div>
-  <!-- HUD -->
-  <div id="hud" class="hidden"> <!-- Start hidden by default -->
+  <!-- HUD (מופשט) -->
+  <div id="hud" class="hidden">
     <div id="clock"></div>
     <label><span class="icon">📁</span><span>Files: <span id="fileCount">0</span></span><input id="fileInputHud" type="file" accept="image/*" multiple></label>
-    <label><span class="icon">🔄</span><span>מהירות סיבוב <span id="rotateVal">0.0006</span></span><input id="rotateSlider" type="range" min="0" max="0.02" step="0.0001" value="0.0006"></label>
-    <label><span class="icon">✨</span><span>מהירות כוכבים <span id="starVal">0.0034</span></span><input id="starSlider" type="range" min="0" max="0.01" step="0.0001" value="0.0034"></label>
-    <label><span class="icon">⚡</span><span>מהירות הבהוב <span id="blinkVal">0.02</span></span><input id="blinkSlider" type="range" min="0" max="0.05" step="0.001" value="0.02"></label>
-    <label><span class="icon">🔍</span><span>גודל גלובלי <span id="scaleVal">0.5</span></span><input id="scaleSlider" type="range" min="0.1" max="2" step="0.1" value="0.5"></label>
-    <label><span class="icon">📐</span><span>עובי מסגרות <span id="frameWidthVal">8</span></span><input id="frameWidthSlider" type="range" min="1" max="12" step="1" value="8"></label>
-    <label><span class="icon">☁️</span><span>שקיפות מסגרות <span id="frameOpacityVal">1</span></span><input id="frameOpacitySlider" type="range" min="0" max="1" step="0.1" value="1"></label>
-    <label><span class="icon">⭐</span><span>גודל כוכבים <span id="starSizeVal">4</span></span><input id="starSizeSlider" type="range" min="0.5" max="8" step="0.5" value="4"></label>
-    <label><span class="icon">🌌</span><span>מספר כוכבים <span id="starCountVal">2000</span></span><input id="starCountSlider" type="range" min="100" max="3000" step="100" value="2000"></label>
-    <label><span class="icon">🌠</span><span>שקיפות תמונות <span id="imgOpacityVal">1</span></span><input id="imgOpacitySlider" type="range" min="0" max="1" step="0.1" value="1"></label>
+    <!-- שאר פקדי ה-HUD (סליידרים) הוסרו -->
   </div>
 
   <div id="modal" class="modal"><img id="modalImg" src=""></div>
@@ -116,22 +96,23 @@
     const params = new URLSearchParams(window.location.search);
 
     // --- Get values from URL or use defaults ---
+    // הערכים האלה עדיין נקראים מה-URL (או משתמשים בברירת מחדל) כי הטופס החיצוני שולח אותם
     let autoRotateSpeed = parseFloat(params.get('autoRotateSpeed')) || 0.0006;
     let starRotSpeed = parseFloat(params.get('starRotSpeed')) || 0.0034;
-    let blinkSpeed = parseFloat(params.get('blinkSpeed')) || 0.02; // This will be used by JS, not directly by CSS animation
+    let blinkSpeed = parseFloat(params.get('blinkSpeed')) || 0.02;
     let globalScale = parseFloat(params.get('globalScale')) || 0.5;
     let frameWidth = parseInt(params.get('frameWidth'), 10) || 8;
     let frameOpacity = parseFloat(params.get('frameOpacity')) || 1;
     let starSize = parseFloat(params.get('starSize')) || 4;
     let starCount = parseInt(params.get('starCount'), 10) || 2000;
     let imgOpacity = parseFloat(params.get('imgOpacity')) || 1;
+    // פרמטר תמונה שהועלתה מהטופס החיצוני
+    const uploadedGlobeImageUrl = params.get('uploadedGlobeImage');
 
-    // Other params from your original code
+
     const requestId = params.get('reqId');
     const currentTheme = params.get('theme');
     const offlineMode = params.get('offline') === 'true';
-    // Note: initialImages from URL is not directly handled here yet, would need more complex parsing if passed.
-    // This script will use defaultImages or images from fileInputHud.
 
     const maxImages = 333;
     let imageItems = []; 
@@ -139,36 +120,25 @@
     const defaultImages = [];
     for(let i = 1; i <= 110; i++) defaultImages.push({url: `https://picsum.photos/seed/${i}/400/300`, name: `Image${i}`});
 
-    if (imageItems.length === 0) { // Initialize with defaults if not populated by other means (e.g., future URL param for images)
-        imageItems = [...defaultImages];
+    // אם הועלתה תמונה מהטופס החיצוני, הוסף אותה ראשונה
+    if (uploadedGlobeImageUrl) {
+        imageItems.push({ url: uploadedGlobeImageUrl, name: 'Uploaded Image' });
     }
 
+    // אם אין תמונות (או רק התמונה שהועלתה), הוסף את ברירות המחדל
+    if (imageItems.length <= (uploadedGlobeImageUrl ? 1 : 0)) {
+        const remainingSlots = maxImages - imageItems.length;
+        imageItems = [...imageItems, ...defaultImages.slice(0, remainingSlots)];
+    }
+
+
     // DOM Elements
-    const hud = document.getElementById('hud');
+    const hudDiv = document.getElementById('hud');
     const hudTab = document.getElementById('hudTab');
     const clockDiv = document.getElementById('clock');
     const fileCountSpan = document.getElementById('fileCount');
     const fileInputHud = document.getElementById('fileInputHud');
     
-    const rotateSlider = document.getElementById('rotateSlider');
-    const rotateValSpan = document.getElementById('rotateVal');
-    const starSlider = document.getElementById('starSlider');
-    const starValSpan = document.getElementById('starVal');
-    const blinkSlider = document.getElementById('blinkSlider');
-    const blinkValSpan = document.getElementById('blinkVal');
-    const scaleSlider = document.getElementById('scaleSlider');
-    const scaleValSpan = document.getElementById('scaleVal');
-    const frameWidthSlider = document.getElementById('frameWidthSlider');
-    const frameWidthValSpan = document.getElementById('frameWidthVal');
-    const frameOpacitySlider = document.getElementById('frameOpacitySlider');
-    const frameOpacityValSpan = document.getElementById('frameOpacityVal');
-    const starSizeSlider = document.getElementById('starSizeSlider');
-    const starSizeValSpan = document.getElementById('starSizeVal');
-    const starCountSlider = document.getElementById('starCountSlider');
-    const starCountValSpan = document.getElementById('starCountVal');
-    const imgOpacitySlider = document.getElementById('imgOpacitySlider');
-    const imgOpacityValSpan = document.getElementById('imgOpacityVal');
-
     const modal = document.getElementById('modal');
     const modalImg = document.getElementById('modalImg');
 
@@ -181,34 +151,15 @@
     document.body.appendChild(renderer.domElement);
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-    controls.autoRotate = false; // Controlled by autoRotateSpeed variable
+    controls.autoRotate = false; 
     const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2();
     const group = new THREE.Group(), frames = [];
     let stars;
 
-    // --- Initialize HUD with values (from URL or defaults) ---
-    function initializeHudValues() {
-        if (rotateSlider) rotateSlider.value = autoRotateSpeed;
-        if (rotateValSpan) rotateValSpan.textContent = autoRotateSpeed.toFixed(4);
-        if (starSlider) starSlider.value = starRotSpeed;
-        if (starValSpan) starValSpan.textContent = starRotSpeed.toFixed(4);
-        if (blinkSlider) blinkSlider.value = blinkSpeed;
-        if (blinkValSpan) blinkValSpan.textContent = blinkSpeed.toFixed(3);
-        if (scaleSlider) scaleSlider.value = globalScale;
-        if (scaleValSpan) scaleValSpan.textContent = globalScale.toFixed(1);
-        if (frameWidthSlider) frameWidthSlider.value = frameWidth;
-        if (frameWidthValSpan) frameWidthValSpan.textContent = frameWidth;
-        if (frameOpacitySlider) frameOpacitySlider.value = frameOpacity;
-        if (frameOpacityValSpan) frameOpacityValSpan.textContent = frameOpacity.toFixed(1);
-        if (starSizeSlider) starSizeSlider.value = starSize;
-        if (starSizeValSpan) starSizeValSpan.textContent = starSize.toFixed(1);
-        if (starCountSlider) starCountSlider.value = starCount;
-        if (starCountValSpan) starCountValSpan.textContent = starCount;
-        if (imgOpacitySlider) imgOpacitySlider.value = imgOpacity;
-        if (imgOpacityValSpan) imgOpacityValSpan.textContent = imgOpacity.toFixed(1);
+    function initializeHudState() {
+        // רק לעדכן את ספירת הקבצים, מכיוון ששאר הפקדים הוסרו
         if (fileCountSpan) fileCountSpan.textContent = imageItems.length;
     }
-
 
     if (requestId) {
       console.log('Request ID (from template):', requestId);
@@ -232,9 +183,9 @@
     updateClock();
 
     function buildScene() {
-      group.clear(); // Clear previous objects from the group
-      frames.length = 0; // Clear frames array
-      if (stars) scene.remove(stars); // Remove previous stars
+      group.clear();
+      frames.length = 0;
+      if (stars) scene.remove(stars);
 
       const geom = new THREE.BufferGeometry(), pos = new Float32Array(starCount * 3);
       for (let i = 0; i < starCount; i++) {
@@ -255,9 +206,9 @@
       const w = baseSize * globalScale, h = w * 0.75;
       const radius = 200, phiStep = Math.PI * (3 - Math.sqrt(5));
 
-      imageItems.forEach((item, i) => {
-        const y = 1 - (i / (imageItems.length - 1)) * 2;
-        const rY = Math.sqrt(1 - y * y);
+      imageItems.slice(0, maxImages).forEach((item, i) => { // Ensure not to exceed maxImages
+        const y = imageItems.length === 1 ? 0 : 1 - (i / (imageItems.length - 1)) * 2; // Center if only one image
+        const rY = imageItems.length === 1 ? 1 : Math.sqrt(1 - y * y);
         const theta = phiStep * i;
         const x = Math.cos(theta) * radius * rY;
         const z = Math.sin(theta) * radius * rY;
@@ -266,7 +217,7 @@
         let texture;
         try {
             texture = new THREE.TextureLoader().load(item.url, 
-                () => {}, 
+                () => { renderer.render(scene, camera); }, // Request render on load
                 undefined, 
                 (err) => { console.error(`Error loading texture for ${item.url}:`, err); }
             );
@@ -283,11 +234,11 @@
         
         const edgeGeo = new THREE.EdgesGeometry(planeGeo);
         const edgeMat = new THREE.LineBasicMaterial({ color: 0x0f0, linewidth: frameWidth, transparent: true, opacity: frameOpacity });
-        const frame = new THREE.LineSegments(edgeGeo, edgeMat);
-        frame.position.copy(mesh.position);
-        frame.rotation.copy(mesh.rotation);
-        group.add(frame);
-        frames.push(frame);
+        const frameMesh = new THREE.LineSegments(edgeGeo, edgeMat);
+        frameMesh.position.copy(mesh.position);
+        frameMesh.rotation.copy(mesh.rotation);
+        group.add(frameMesh);
+        frames.push(frameMesh);
         
         const cvs = document.createElement('canvas');
         const contextScale = 2;
@@ -295,19 +246,19 @@
         cvs.height = 64 * contextScale;
         const ctx = cvs.getContext('2d'); 
         ctx.scale(contextScale, contextScale);
-        ctx.font = 'bold 20px monospace'; // Changed font
+        ctx.font = 'bold 20px monospace';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillStyle = '#00ff00'; // Green text
+        ctx.fillStyle = '#00ff00';
         ctx.shadowColor = '#00ff00';
-        ctx.shadowBlur = 8; // Slightly less blur
+        ctx.shadowBlur = 8;
         ctx.fillText(item.name || 'Untitled', 128, 32);
         
         const canvasTexture = new THREE.CanvasTexture(cvs);
         const spriteMat = new THREE.SpriteMaterial({ map: canvasTexture, transparent: true, depthTest: false });
         const sprite = new THREE.Sprite(spriteMat); 
-        sprite.scale.set(w * 0.8, h * 0.2, 1); // Adjusted sprite scale
-        const yOffset = h / 2 + (h * 0.1) + 5; // Position sprite slightly more below
+        sprite.scale.set(w * 0.8, h * 0.2, 1);
+        const yOffset = h / 2 + (h * 0.1) + 5;
         sprite.position.set(x, y * radius - yOffset, z); 
         sprite.renderOrder = 1;
         group.add(sprite);
@@ -317,7 +268,7 @@
       if (fileCountSpan) fileCountSpan.textContent = imageItems.length;
     }
 
-    if (hudTab) hudTab.addEventListener('click', () => { if (hud) hud.classList.toggle('hidden'); });
+    if (hudTab) hudTab.addEventListener('click', () => { if (hudDiv) hudDiv.classList.toggle('hidden'); });
 
     function createCyberTexts() {
       document.querySelectorAll('.cyber-text').forEach(e => e.remove());
@@ -328,73 +279,61 @@
         el.textContent = s;
         el.style.top = Math.random() * 90 + '%';
         el.style.left = Math.random() * 90 + '%';
-        el.style.setProperty('--blinkSpeed', (Math.random() * 1.5 + 0.5) + 's'); // Randomize blink speed slightly
+        el.style.setProperty('--blinkSpeed', (Math.random() * 1.5 + 0.5) + 's');
         document.body.appendChild(el);
       });
       const fix = document.createElement('div');
       fix.className = 'cyber-text';
-      fix.textContent = 'i24CyberSphere v3.1'; // Updated text
-      fix.style.color = '#ff0'; // Yellow
+      fix.textContent = 'i24CyberSphere v3.2'; // Version bump
+      fix.style.color = '#ff0';
       fix.style.top = '2%'; fix.style.left = '2%';
       fix.style.animation = 'none'; fix.style.opacity = '0.8';
       document.body.appendChild(fix);
     }
 
-    function setupHUDListeners() {
+    function setupSimplifiedHUDListeners() {
       if (fileInputHud) {
         fileInputHud.addEventListener('change', e => {
-          const files = Array.from(e.target.files).slice(0, maxImages - imageItems.length);
+          const files = Array.from(e.target.files);
           if (files.length === 0) return;
+
+          const currentImageCount = imageItems.length;
+          const filesToLoad = files.slice(0, maxImages - currentImageCount);
+          
+          if (filesToLoad.length === 0 && files.length > 0) {
+              alert(`ניתן להוסיף עד ${maxImages} תמונות בסך הכל. כבר יש ${currentImageCount} תמונות.`);
+              fileInputHud.value = ''; // Reset file input
+              return;
+          }
 
           let loadedCount = 0;
           const newImages = [];
-          files.forEach(f => {
+          filesToLoad.forEach(f => {
               const r = new FileReader();
               r.onload = ev => {
                   newImages.push({ url: ev.target.result, name: f.name });
                   loadedCount++;
-                  if (loadedCount === files.length) {
-                      imageItems = [...imageItems, ...newImages].slice(0, maxImages);
+                  if (loadedCount === filesToLoad.length) {
+                      imageItems = [...imageItems, ...newImages];
                       if (fileCountSpan) fileCountSpan.textContent = imageItems.length;
                       buildScene();
+                       fileInputHud.value = ''; // Reset file input after processing
                   }
               };
               r.onerror = (err) => {
                   console.error("Error reading file:", f.name, err);
                   loadedCount++;
-                   if (loadedCount === files.length) {
-                      imageItems = [...imageItems, ...newImages].slice(0, maxImages);
+                   if (loadedCount === filesToLoad.length) {
+                      imageItems = [...imageItems, ...newImages];
                       if (fileCountSpan) fileCountSpan.textContent = imageItems.length;
                       buildScene();
+                      fileInputHud.value = ''; // Reset file input
                   }
               };
               r.readAsDataURL(f);
           });
         });
       }
-
-      const sliderMap = { 
-        rotateSlider: { variable: 'autoRotateSpeed', span: rotateValSpan, precision: 4, updateFn: val => autoRotateSpeed = val },
-        starSlider: { variable: 'starRotSpeed', span: starValSpan, precision: 4, updateFn: val => starRotSpeed = val },
-        blinkSlider: { variable: 'blinkSpeed', span: blinkValSpan, precision: 3, updateFn: val => blinkSpeed = val },
-        scaleSlider: { variable: 'globalScale', span: scaleValSpan, precision: 1, updateFn: val => { globalScale = val; buildScene(); } },
-        frameWidthSlider: { variable: 'frameWidth', span: frameWidthValSpan, precision: 0, updateFn: val => { frameWidth = val; buildScene(); } },
-        frameOpacitySlider: { variable: 'frameOpacity', span: frameOpacityValSpan, precision: 1, updateFn: val => { frameOpacity = val; buildScene(); /* might need specific update */ } },
-        starSizeSlider: { variable: 'starSize', span: starSizeValSpan, precision: 1, updateFn: val => { starSize = val; if (stars) stars.material.size = val; } },
-        starCountSlider: { variable: 'starCount', span: starCountValSpan, precision: 0, updateFn: val => { starCount = val; buildScene(); } },
-        imgOpacitySlider: { variable: 'imgOpacity', span: imgOpacityValSpan, precision: 1, updateFn: val => { imgOpacity = val; buildScene(); /* might need specific update */ } }
-      };
-
-      Object.entries(sliderMap).forEach(([sliderId, config]) => {
-        const sliderElement = document.getElementById(sliderId);
-        if (sliderElement && config.span) {
-          sliderElement.addEventListener('input', e => {
-            const value = config.precision > 0 ? parseFloat(e.target.value) : parseInt(e.target.value, 10);
-            config.updateFn(value);
-            config.span.textContent = value.toFixed(config.precision);
-          });
-        }
-      });
     }
     
     function animate() {
@@ -402,10 +341,9 @@
       group.rotation.y += autoRotateSpeed;
       if (stars) stars.rotation.y += starRotSpeed;
       
-      // Update frame opacity using JS for blinkSpeed control from variable
       frames.forEach((f, i) => {
-          if(f.material) { // Ensure material exists
-              f.material.opacity = frameOpacity + 0.3 * Math.sin(Date.now() * (blinkSpeed * 100) + i); // blinkSpeed might need scaling for desired effect
+          if(f.material) {
+              f.material.opacity = frameOpacity + 0.3 * Math.sin(Date.now() * (blinkSpeed * 100) + i);
           }
       });
 
@@ -417,7 +355,7 @@
     const DOUBLE_CLICK_THRESHOLD = 300;
 
     window.addEventListener('click', e => {
-        if (e.target.closest('#hud') || e.target.closest('#hudTab')) { // Ignore clicks on HUD
+        if (hudDiv && (hudDiv.contains(e.target) || e.target === hudTab || hudTab.contains(e.target)) ) { // Ignore clicks on HUD and its tab
             return;
         }
         const currentTime = new Date().getTime();
@@ -447,9 +385,9 @@
     });
 
     // Initial setup
-    initializeHudValues(); // Set HUD elements to reflect initial/URL param values
+    initializeHudState(); 
     buildScene();
-    setupHUDListeners(); // Setup listeners after initial values are set
+    setupSimplifiedHUDListeners();
     animate();
 
   </script>
