@@ -11,65 +11,56 @@
     canvas { display:block; width:100%; height:100%; }
 
    /* HUD וגילוי/הסתרה */
-#hudTab {
-  position:absolute; top:8px; right:8px;
-  width:32px; height:32px;
-  background:rgba(0,0,0,0.6); border:2px solid #0f0;
-  border-radius:4px 0 0 4px; z-index:101;
-  display:flex; align-items:center; justify-content:center;
-  cursor:pointer;
-}
-#hudTab .icon { color:#0f0; font-size:20px; text-shadow:0 0 5px #0f0; }
+    #hudTab {
+      position:absolute; top:8px; right:8px;
+      width:32px; height:32px;
+      background:rgba(0,0,0,0.6); border:2px solid #0f0;
+      border-radius:4px 0 0 4px; z-index:101;
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer;
+    }
+    #hudTab .icon { color:#0f0; font-size:20px; text-shadow:0 0 5px #0f0; }
 
-#hud {
-  position:absolute; top:8px; right:40px;
-  width:calc(100% - 56px); max-width:320px; max-height:90vh; overflow-y:auto;
-  background:rgba(0,0,0,0.6); border:2px solid #0f0; border-radius:8px;
-  padding:8px; box-sizing:border-box;
-  font-family:monospace; font-size:14px; color:#0f0; z-index:100;
-}
-#hud.hidden { display:none; }
-#hud label { display:flex; align-items:center; margin:6px 0; }
-#hud label .icon { margin-left:6px; color:#0f0; text-shadow:0 0 5px #0f0; }
-#hud label span { flex:1; }
-#hud input[type=range] {
-  -webkit-appearance:none; width:100%; height:8px; border-radius:4px;
-  background:linear-gradient(to right, #0f0 0%, #f00 100%);
-  outline:none; margin-top:4px;
-}
-#hud input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance:none; width:16px; height:16px; border-radius:50%; background:#0f0; cursor:pointer; border:2px solid #000;
-}
-#hud input[type=range]::-moz-range-thumb {
-  width:16px; height:16px; border-radius:50%; background:#0f0; cursor:pointer; border:2px solid #000;
-}
+    #hud {
+      position:absolute; top:8px; right:40px;
+      width:calc(100% - 56px); max-width:320px; max-height:calc(100vh - 16px); overflow-y:auto; /* max-height calc */
+      background:rgba(0,0,0,0.6); border:2px solid #0f0; border-radius:8px;
+      padding:8px; box-sizing:border-box;
+      font-family:monospace; font-size:14px; color:#0f0; z-index:100;
+    }
+    #hud.hidden { display:none; }
+    #hud label { display:flex; align-items:center; margin:6px 0; }
+    #hud label .icon { margin-left:6px; color:#0f0; text-shadow:0 0 5px #0f0; }
+    #hud label span { flex:1; }
+    #hud input[type=range] {
+      -webkit-appearance:none; width:100%; height:8px; border-radius:4px;
+      background:linear-gradient(to right, #0f0 0%, #f00 100%);
+      outline:none; margin-top:4px;
+    }
+    #hud input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance:none; width:16px; height:16px; border-radius:50%; background:#0f0; cursor:pointer; border:2px solid #000;
+    }
+    #hud input[type=range]::-moz-range-thumb {
+      width:16px; height:16px; border-radius:50%; background:#0f0; cursor:pointer; border:2px solid #000;
+    }
+    #hud input[type="file"] {
+        color: #0f0;
+        background-color: rgba(0,255,0,0.1);
+        border: 1px solid #0f0;
+        padding: 3px;
+        margin-top: 4px;
+        font-size: 12px;
+        width: 100%;
+    }
+    #hud input[type="file"]::file-selector-button {
+        background-color: #0f0;
+        color: #000;
+        border: none;
+        padding: 2px 6px;
+        border-radius: 2px;
+        cursor: pointer;
+    }
 
-/* שעון ותאריך */
-#clock {
-  text-align:center; margin:8px 0;
-  font-family:monospace; font-size:16px; color:#ff0;
-  text-shadow:0 0 8px #ff0;
-}
-
-/* מודאל */
-.modal { position:fixed; top:0; left:0; width:100%; height:100%; display:flex;
-  align-items:center; justify-content:center;
-  background:rgba(0,0,0,1); visibility:hidden; opacity:0; transition:opacity .4s; z-index:50;
-}
-.modal.visible { visibility:visible; opacity:1; }
-.modal img {
-  max-width:90%; max-height:90%; border-radius:8px;
-  transform:scale(0.7); opacity:0;
-  transition:transform .4s ease, opacity .4s ease;
-  box-shadow:0 0 20px #0f0;
-}
-.modal.visible img { transform:scale(1); opacity:1; }
-
-/* טקסטים סייבר */
-.cyber-text { position:absolute; color:#0f0; font-family:'Courier New',monospace; font-size:16px;
-  pointer-events:none; animation:flicker var(--blinkSpeed,2s) infinite; opacity:0.6;
-}
-@keyframes flicker { 0%,100%{opacity:0.2;} 50%{opacity:0.8;} }
 
     /* שעון ותאריך */
     #clock {
@@ -81,20 +72,20 @@
     /* מודאל */
     .modal { position:fixed; top:0; left:0; width:100%; height:100%; display:flex;
       align-items:center; justify-content:center;
-      background:rgba(0,0,0,1); visibility:hidden; opacity:0; transition:opacity .4s; z-index:50;
+      background:rgba(0,0,0,0.9); visibility:hidden; opacity:0; transition:opacity .4s; z-index:1050; /* Increased z-index */
     }
     .modal.visible { visibility:visible; opacity:1; }
     .modal img {
       max-width:90%; max-height:90%; border-radius:8px;
       transform:scale(0.7); opacity:0;
       transition:transform .4s ease, opacity .4s ease;
-      box-shadow:0 0 20px #0f0;
+      box-shadow:0 0 20px #0f0, 0 0 40px #0f0; /* Enhanced shadow */
     }
     .modal.visible img { transform:scale(1); opacity:1; }
 
     /* טקסטים סייבר */
     .cyber-text { position:absolute; color:#0f0; font-family:'Courier New',monospace; font-size:16px;
-      pointer-events:none; animation:flicker var(--blinkSpeed,2s) infinite; opacity:0.6;
+      pointer-events:none; animation:flicker 2s infinite; opacity:0.6; /* Removed var(--blinkSpeed) for CSS animation */
     }
     @keyframes flicker { 0%,100%{opacity:0.2;} 50%{opacity:0.8;} }
   </style>
@@ -103,9 +94,9 @@
   <!-- לחצן HUD עם אייקון סייבר -->
   <div id="hudTab"><span class="icon">⚙</span></div>
   <!-- HUD -->
-  <div id="hud">
+  <div id="hud" class="hidden"> <!-- Start hidden by default -->
     <div id="clock"></div>
-    <label><span class="icon">📁</span><span>Files: <span id="fileCount">110</span></span><input id="fileInputHud" type="file" accept="image/*" multiple></label>
+    <label><span class="icon">📁</span><span>Files: <span id="fileCount">0</span></span><input id="fileInputHud" type="file" accept="image/*" multiple></label>
     <label><span class="icon">🔄</span><span>מהירות סיבוב <span id="rotateVal">0.0006</span></span><input id="rotateSlider" type="range" min="0" max="0.02" step="0.0001" value="0.0006"></label>
     <label><span class="icon">✨</span><span>מהירות כוכבים <span id="starVal">0.0034</span></span><input id="starSlider" type="range" min="0" max="0.01" step="0.0001" value="0.0034"></label>
     <label><span class="icon">⚡</span><span>מהירות הבהוב <span id="blinkVal">0.02</span></span><input id="blinkSlider" type="range" min="0" max="0.05" step="0.001" value="0.02"></label>
@@ -117,228 +108,350 @@
     <label><span class="icon">🌠</span><span>שקיפות תמונות <span id="imgOpacityVal">1</span></span><input id="imgOpacitySlider" type="range" min="0" max="1" step="0.1" value="1"></label>
   </div>
 
-  <!-- מודאל להצגת תמונה -->
   <div id="modal" class="modal"><img id="modalImg" src=""></div>
 
-  <!-- ספריות Three.js -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/build/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js/controls/OrbitControls.js"></script>
   <script>
-    const maxImages=333;
-    let autoRotateSpeed=0.0006, starRotSpeed=0.0034, blinkSpeed=0.02;
-    let globalScale=0.5, frameWidth=8, frameOpacity=1;
-    let starSize=4, starCount=2000, imgOpacity=1;
-    let imageItems=[]; // This will be populated by URL params or default
-    
-    // Default images if no request data is found
-    const defaultImages = [];
-    for(let i=1;i<=110;i++) defaultImages.push({url:`https://picsum.photos/seed/${i}/400/300`,name:`Image${i}`});
-
-    const scene=new THREE.Scene();
-    const camera=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,0.1,2000); camera.position.z=350;
-    const renderer=new THREE.WebGLRenderer({antialias:true}); renderer.setSize(innerWidth,innerHeight); document.body.appendChild(renderer.domElement);
-    const controls=new THREE.OrbitControls(camera,renderer.domElement); controls.enableDamping=true; controls.autoRotate=false;
-    const raycaster=new THREE.Raycaster(), mouse=new THREE.Vector2();
-    const group=new THREE.Group(), frames=[]; let stars;
-
-    // --- Start: Added script to read URL parameters ---
     const params = new URLSearchParams(window.location.search);
+
+    // --- Get values from URL or use defaults ---
+    let autoRotateSpeed = parseFloat(params.get('autoRotateSpeed')) || 0.0006;
+    let starRotSpeed = parseFloat(params.get('starRotSpeed')) || 0.0034;
+    let blinkSpeed = parseFloat(params.get('blinkSpeed')) || 0.02; // This will be used by JS, not directly by CSS animation
+    let globalScale = parseFloat(params.get('globalScale')) || 0.5;
+    let frameWidth = parseInt(params.get('frameWidth'), 10) || 8;
+    let frameOpacity = parseFloat(params.get('frameOpacity')) || 1;
+    let starSize = parseFloat(params.get('starSize')) || 4;
+    let starCount = parseInt(params.get('starCount'), 10) || 2000;
+    let imgOpacity = parseFloat(params.get('imgOpacity')) || 1;
+
+    // Other params from your original code
     const requestId = params.get('reqId');
     const currentTheme = params.get('theme');
     const offlineMode = params.get('offline') === 'true';
+    // Note: initialImages from URL is not directly handled here yet, would need more complex parsing if passed.
+    // This script will use defaultImages or images from fileInputHud.
+
+    const maxImages = 333;
+    let imageItems = []; 
+    
+    const defaultImages = [];
+    for(let i = 1; i <= 110; i++) defaultImages.push({url: `https://picsum.photos/seed/${i}/400/300`, name: `Image${i}`});
+
+    if (imageItems.length === 0) { // Initialize with defaults if not populated by other means (e.g., future URL param for images)
+        imageItems = [...defaultImages];
+    }
+
+    // DOM Elements
+    const hud = document.getElementById('hud');
+    const hudTab = document.getElementById('hudTab');
+    const clockDiv = document.getElementById('clock');
+    const fileCountSpan = document.getElementById('fileCount');
+    const fileInputHud = document.getElementById('fileInputHud');
+    
+    const rotateSlider = document.getElementById('rotateSlider');
+    const rotateValSpan = document.getElementById('rotateVal');
+    const starSlider = document.getElementById('starSlider');
+    const starValSpan = document.getElementById('starVal');
+    const blinkSlider = document.getElementById('blinkSlider');
+    const blinkValSpan = document.getElementById('blinkVal');
+    const scaleSlider = document.getElementById('scaleSlider');
+    const scaleValSpan = document.getElementById('scaleVal');
+    const frameWidthSlider = document.getElementById('frameWidthSlider');
+    const frameWidthValSpan = document.getElementById('frameWidthVal');
+    const frameOpacitySlider = document.getElementById('frameOpacitySlider');
+    const frameOpacityValSpan = document.getElementById('frameOpacityVal');
+    const starSizeSlider = document.getElementById('starSizeSlider');
+    const starSizeValSpan = document.getElementById('starSizeVal');
+    const starCountSlider = document.getElementById('starCountSlider');
+    const starCountValSpan = document.getElementById('starCountVal');
+    const imgOpacitySlider = document.getElementById('imgOpacitySlider');
+    const imgOpacityValSpan = document.getElementById('imgOpacityVal');
+
+    const modal = document.getElementById('modal');
+    const modalImg = document.getElementById('modalImg');
+
+    // Three.js setup
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 2000);
+    camera.position.z = 350;
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(innerWidth, innerHeight);
+    document.body.appendChild(renderer.domElement);
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.autoRotate = false; // Controlled by autoRotateSpeed variable
+    const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2();
+    const group = new THREE.Group(), frames = [];
+    let stars;
+
+    // --- Initialize HUD with values (from URL or defaults) ---
+    function initializeHudValues() {
+        if (rotateSlider) rotateSlider.value = autoRotateSpeed;
+        if (rotateValSpan) rotateValSpan.textContent = autoRotateSpeed.toFixed(4);
+        if (starSlider) starSlider.value = starRotSpeed;
+        if (starValSpan) starValSpan.textContent = starRotSpeed.toFixed(4);
+        if (blinkSlider) blinkSlider.value = blinkSpeed;
+        if (blinkValSpan) blinkValSpan.textContent = blinkSpeed.toFixed(3);
+        if (scaleSlider) scaleSlider.value = globalScale;
+        if (scaleValSpan) scaleValSpan.textContent = globalScale.toFixed(1);
+        if (frameWidthSlider) frameWidthSlider.value = frameWidth;
+        if (frameWidthValSpan) frameWidthValSpan.textContent = frameWidth;
+        if (frameOpacitySlider) frameOpacitySlider.value = frameOpacity;
+        if (frameOpacityValSpan) frameOpacityValSpan.textContent = frameOpacity.toFixed(1);
+        if (starSizeSlider) starSizeSlider.value = starSize;
+        if (starSizeValSpan) starSizeValSpan.textContent = starSize.toFixed(1);
+        if (starCountSlider) starCountSlider.value = starCount;
+        if (starCountValSpan) starCountValSpan.textContent = starCount;
+        if (imgOpacitySlider) imgOpacitySlider.value = imgOpacity;
+        if (imgOpacityValSpan) imgOpacityValSpan.textContent = imgOpacity.toFixed(1);
+        if (fileCountSpan) fileCountSpan.textContent = imageItems.length;
+    }
+
 
     if (requestId) {
       console.log('Request ID (from template):', requestId);
-      // Here you would typically fetch or determine data based on requestId
-      // For demonstration, let's assume requestId could modify imageItems
-      // For example, if requestId was 'special-event', you might load different images.
-      // imageItems = loadImagesForRequest(requestId); 
-      // For now, we'll just log it and use default images if imageItems isn't populated.
       document.title = `גלריה - בקשה ${requestId}`;
     }
-
     if (currentTheme) {
       console.log('Theme (from template):', currentTheme);
-      document.body.classList.add(`theme-${currentTheme}`); // e.g. theme-dark or theme-light
-      // You might want to adjust HUD colors or other elements based on the theme
-      if (currentTheme === 'light') {
-        // Example: Adjust colors for light theme
-        // document.getElementById('hud').style.borderColor = '#333';
-        // document.getElementById('hud').style.color = '#333';
-      }
+      document.body.classList.add(`theme-${currentTheme}`);
     }
-
     if (offlineMode) {
         console.log('Template is in offline mode.');
-        // Potentially alter behavior if offline, e.g., use only local/default assets.
     }
 
-    // Populate imageItems: Use request-specific data if available, otherwise defaults.
-    // This is a placeholder for actual data loading logic based on requestId.
-    // For now, if no specific logic changes imageItems based on requestId, it will use defaultImages.
-    if (imageItems.length === 0) {
-        imageItems = [...defaultImages];
-    }
-    // --- End: Added script to read URL parameters ---
-
-
-    // שעון דיגיטלי
     function updateClock() {
-      const now=new Date();
-      const date=now.toLocaleDateString('he-IL',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-      const time=now.toLocaleTimeString('he-IL');
-      document.getElementById('clock').textContent = `${date} ${time}`;
+      const now = new Date();
+      const date = now.toLocaleDateString('he-IL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      const time = now.toLocaleTimeString('he-IL');
+      if (clockDiv) clockDiv.textContent = `${date} ${time}`;
     }
-    setInterval(updateClock,1000); updateClock();
+    setInterval(updateClock, 1000);
+    updateClock();
 
-    buildScene(); setupHUD(); animate();
+    function buildScene() {
+      group.clear(); // Clear previous objects from the group
+      frames.length = 0; // Clear frames array
+      if (stars) scene.remove(stars); // Remove previous stars
 
-    function buildScene(){
-      group.clear(); frames.length=0; if(stars) scene.remove(stars);
-      const geom=new THREE.BufferGeometry(), pos=new Float32Array(starCount*3);
-      for(let i=0;i<starCount;i++){pos[i*3]=(Math.random()-0.5)*2000;pos[i*3+1]=(Math.random()-0.5)*2000;pos[i*3+2]=(Math.random()-0.5)*2000;}
-      geom.setAttribute('position',new THREE.BufferAttribute(pos,3));
-      stars=new THREE.Points(geom,new THREE.PointsMaterial({color:0xffffff,size:starSize,transparent:true,opacity:1})); scene.add(stars);
+      const geom = new THREE.BufferGeometry(), pos = new Float32Array(starCount * 3);
+      for (let i = 0; i < starCount; i++) {
+        pos[i * 3] = (Math.random() - 0.5) * 2000;
+        pos[i * 3 + 1] = (Math.random() - 0.5) * 2000;
+        pos[i * 3 + 2] = (Math.random() - 0.5) * 2000;
+      }
+      geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      stars = new THREE.Points(geom, new THREE.PointsMaterial({ color: 0xffffff, size: starSize, transparent: true, opacity: 1 }));
+      scene.add(stars);
       
       if (imageItems.length === 0) {
         console.warn("No images to display in the globe.");
-        return; // Don't build if no images
+        return;
       }
 
-      const baseSize=60; // Removed factor, as imageItems count is now dynamic
-      const w=baseSize*globalScale, h=w*0.75;
-      const radius=200, phiStep=Math.PI*(3-Math.sqrt(5)); // Golden Angle
+      const baseSize = 60;
+      const w = baseSize * globalScale, h = w * 0.75;
+      const radius = 200, phiStep = Math.PI * (3 - Math.sqrt(5));
 
-      imageItems.forEach((item,i)=>{
-        const y=1-(i/(imageItems.length-1))*2; // Distribute images along y-axis
-        const rY=Math.sqrt(1-y*y); // Radius at this y-level
-        const theta=phiStep*i; // Angle for this image
-
-        const x=Math.cos(theta)*radius*rY;
-        const z=Math.sin(theta)*radius*rY;
+      imageItems.forEach((item, i) => {
+        const y = 1 - (i / (imageItems.length - 1)) * 2;
+        const rY = Math.sqrt(1 - y * y);
+        const theta = phiStep * i;
+        const x = Math.cos(theta) * radius * rY;
+        const z = Math.sin(theta) * radius * rY;
         
-        const geo=new THREE.PlaneGeometry(w,h);
-        // Use a try-catch for texture loading as URLs might be invalid
+        const planeGeo = new THREE.PlaneGeometry(w, h);
         let texture;
         try {
             texture = new THREE.TextureLoader().load(item.url, 
-                () => {}, // onLoad
-                undefined, // onProgress
-                (err) => { console.error(`Error loading texture for ${item.url}:`, err); } // onError
+                () => {}, 
+                undefined, 
+                (err) => { console.error(`Error loading texture for ${item.url}:`, err); }
             );
         } catch (e) {
             console.error(`Failed to initiate texture loading for ${item.url}:`, e);
-            // Optionally use a placeholder texture
-            // texture = new THREE.TextureLoader().load('placeholder.png');
         }
 
-        const mat=new THREE.MeshBasicMaterial({map:texture,side:THREE.DoubleSide,transparent:true,opacity:imgOpacity});
-        const mesh=new THREE.Mesh(geo,mat); mesh.position.set(x,y*radius,z); mesh.lookAt(0,0,0); mesh.userData={url:item.url}; group.add(mesh);
+        const mat = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide, transparent: true, opacity: imgOpacity });
+        const mesh = new THREE.Mesh(planeGeo, mat);
+        mesh.position.set(x, y * radius, z);
+        mesh.lookAt(0, 0, 0);
+        mesh.userData = { url: item.url };
+        group.add(mesh);
         
-        const edge=new THREE.EdgesGeometry(geo);
-        const eMat=new THREE.LineBasicMaterial({color:0x0f0,linewidth:frameWidth,transparent:true,opacity:frameOpacity});
-        const frame=new THREE.LineSegments(edge,eMat); frame.position.copy(mesh.position); frame.rotation.copy(mesh.rotation); group.add(frame); frames.push(frame);
+        const edgeGeo = new THREE.EdgesGeometry(planeGeo);
+        const edgeMat = new THREE.LineBasicMaterial({ color: 0x0f0, linewidth: frameWidth, transparent: true, opacity: frameOpacity });
+        const frame = new THREE.LineSegments(edgeGeo, edgeMat);
+        frame.position.copy(mesh.position);
+        frame.rotation.copy(mesh.rotation);
+        group.add(frame);
+        frames.push(frame);
         
-        // Text Label (Sprite)
-        const cvs=document.createElement('canvas');
-        const contextScale = 2; // Render canvas at higher resolution for sharper text
-        cvs.width=256 * contextScale; 
-        cvs.height=64 * contextScale;
-        const ctx=cvs.getContext('2d'); 
-        ctx.scale(contextScale, contextScale); // Scale down drawing operations
-        ctx.font='24px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-        ctx.fillStyle='#f00'; ctx.shadowColor='#f00'; ctx.shadowBlur=10; 
-        ctx.fillText(item.name || 'Untitled',128,32); // Use item.name or a default
+        const cvs = document.createElement('canvas');
+        const contextScale = 2;
+        cvs.width = 256 * contextScale; 
+        cvs.height = 64 * contextScale;
+        const ctx = cvs.getContext('2d'); 
+        ctx.scale(contextScale, contextScale);
+        ctx.font = 'bold 20px monospace'; // Changed font
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#00ff00'; // Green text
+        ctx.shadowColor = '#00ff00';
+        ctx.shadowBlur = 8; // Slightly less blur
+        ctx.fillText(item.name || 'Untitled', 128, 32);
         
-        const txt=new THREE.CanvasTexture(cvs);
-        const sprMat=new THREE.SpriteMaterial({map:txt,transparent:true, depthTest: false}); // depthTest false to ensure visibility
-        const spr=new THREE.Sprite(sprMat); 
-        spr.scale.set(w,h*0.25,1); 
-        // Position sprite below the image, adjust yOffset as needed
-        const yOffset = h/2 + 10; // 10 units below the image
-        spr.position.set(x,y*radius - yOffset,z); 
-        spr.renderOrder = 1; // Render sprites on top of images if overlapping
-        group.add(spr);
+        const canvasTexture = new THREE.CanvasTexture(cvs);
+        const spriteMat = new THREE.SpriteMaterial({ map: canvasTexture, transparent: true, depthTest: false });
+        const sprite = new THREE.Sprite(spriteMat); 
+        sprite.scale.set(w * 0.8, h * 0.2, 1); // Adjusted sprite scale
+        const yOffset = h / 2 + (h * 0.1) + 5; // Position sprite slightly more below
+        sprite.position.set(x, y * radius - yOffset, z); 
+        sprite.renderOrder = 1;
+        group.add(sprite);
       }); 
       scene.add(group); 
       createCyberTexts();
-      document.getElementById('fileCount').textContent=imageItems.length; // Update HUD
+      if (fileCountSpan) fileCountSpan.textContent = imageItems.length;
     }
 
-    document.getElementById('hudTab').addEventListener('click',()=>{document.getElementById('hud').classList.toggle('hidden');});
+    if (hudTab) hudTab.addEventListener('click', () => { if (hud) hud.classList.toggle('hidden'); });
 
-    function createCyberTexts(){
-      document.querySelectorAll('.cyber-text').forEach(e=>e.remove());
-      const samples=['01010101','H4CK3R','CY8ER','▓▓▓▓','ᚠᛟᛋ','BO0T','C0D3','SYS','███','NE0N'];
-      samples.forEach((s,i)=>{const el=document.createElement('div');el.className='cyber-text';el.textContent=s;el.style.top=Math.random()*90+'%';el.style.left=Math.random()*90+'%';document.body.appendChild(el);});
-      const fix=document.createElement('div');fix.className='cyber-text';fix.textContent='orengamchi.com';fix.style.color='#ff0';fix.style.top='5%';fix.style.left='5%';fix.style.animation='none';document.body.appendChild(fix);
-    }
-
-    function setupHUD(){
-      document.getElementById('fileCount').textContent=imageItems.length;
-      document.getElementById('fileInputHud').addEventListener('change',e=>{
-        const files=Array.from(e.target.files).slice(0,maxImages - imageItems.length); // Prevent exceeding maxImages
-        if (files.length === 0) return;
-
-        let loadedCount=0;
-        const newImages = [];
-        files.forEach(f=>{
-            const r=new FileReader();
-            r.onload=ev=>{
-                newImages.push({url:ev.target.result,name:f.name});
-                loadedCount++;
-                if(loadedCount===files.length){
-                    imageItems = [...imageItems, ...newImages].slice(0, maxImages); // Add new and trim if over max
-                    document.getElementById('fileCount').textContent=imageItems.length;
-                    buildScene();
-                }
-            };
-            r.onerror = (err) => { // Handle file reading errors
-                console.error("Error reading file:", f.name, err);
-                loadedCount++; // Still increment to not hang the process
-                 if(loadedCount===files.length){ // Check if all attempted files are processed
-                    imageItems = [...imageItems, ...newImages].slice(0, maxImages);
-                    document.getElementById('fileCount').textContent=imageItems.length;
-                    buildScene();
-                }
-            };
-            r.readAsDataURL(f);
-        });
+    function createCyberTexts() {
+      document.querySelectorAll('.cyber-text').forEach(e => e.remove());
+      const samples = ['01010101', 'H4CK3R', 'CY8ER', '▓▓▓▓', 'ᚠᛟᛋ', 'BO0T', 'C0D3', 'SYS', '███', 'NE0N', 'ACCESS', 'DATASTREAM', 'ENCRYPTED', 'SECURE', 'NODE', 'NETWORK'];
+      samples.forEach((s, i) => {
+        const el = document.createElement('div');
+        el.className = 'cyber-text';
+        el.textContent = s;
+        el.style.top = Math.random() * 90 + '%';
+        el.style.left = Math.random() * 90 + '%';
+        el.style.setProperty('--blinkSpeed', (Math.random() * 1.5 + 0.5) + 's'); // Randomize blink speed slightly
+        document.body.appendChild(el);
       });
-      const map={ rotateSlider:v=>autoRotateSpeed=v, starSlider:v=>starRotSpeed=v,
-        blinkSlider:v=>blinkSpeed=v, scaleSlider:v=>{globalScale=v;buildScene();}, frameWidthSlider:v=>{frameWidth=v;buildScene();},
-        frameOpacitySlider:v=>frameOpacity=v, starSizeSlider:v=>{starSize=v;if(stars)stars.material.size=v;}, starCountSlider:v=>{starCount=v;buildScene();}, imgOpacitySlider:v=>{imgOpacity=v;buildScene();}
-      };
-      Object.entries(map).forEach(([id,fn])=>{const inp=document.getElementById(id),val=document.getElementById(id.replace('Slider','Val'));inp.addEventListener('input',e=>{const v=parseFloat(e.target.value);fn(v);val.textContent=v;});val.textContent=inp.value;});
+      const fix = document.createElement('div');
+      fix.className = 'cyber-text';
+      fix.textContent = 'i24CyberSphere v3.1'; // Updated text
+      fix.style.color = '#ff0'; // Yellow
+      fix.style.top = '2%'; fix.style.left = '2%';
+      fix.style.animation = 'none'; fix.style.opacity = '0.8';
+      document.body.appendChild(fix);
     }
 
-    function animate(){requestAnimationFrame(animate);group.rotation.y+=autoRotateSpeed;if(stars)stars.rotation.y+=starRotSpeed;frames.forEach((f,i)=>f.material.opacity=frameOpacity+0.3*Math.sin(Date.now()*blinkSpeed+i));controls.update();renderer.render(scene,camera);}    
+    function setupHUDListeners() {
+      if (fileInputHud) {
+        fileInputHud.addEventListener('change', e => {
+          const files = Array.from(e.target.files).slice(0, maxImages - imageItems.length);
+          if (files.length === 0) return;
+
+          let loadedCount = 0;
+          const newImages = [];
+          files.forEach(f => {
+              const r = new FileReader();
+              r.onload = ev => {
+                  newImages.push({ url: ev.target.result, name: f.name });
+                  loadedCount++;
+                  if (loadedCount === files.length) {
+                      imageItems = [...imageItems, ...newImages].slice(0, maxImages);
+                      if (fileCountSpan) fileCountSpan.textContent = imageItems.length;
+                      buildScene();
+                  }
+              };
+              r.onerror = (err) => {
+                  console.error("Error reading file:", f.name, err);
+                  loadedCount++;
+                   if (loadedCount === files.length) {
+                      imageItems = [...imageItems, ...newImages].slice(0, maxImages);
+                      if (fileCountSpan) fileCountSpan.textContent = imageItems.length;
+                      buildScene();
+                  }
+              };
+              r.readAsDataURL(f);
+          });
+        });
+      }
+
+      const sliderMap = { 
+        rotateSlider: { variable: 'autoRotateSpeed', span: rotateValSpan, precision: 4, updateFn: val => autoRotateSpeed = val },
+        starSlider: { variable: 'starRotSpeed', span: starValSpan, precision: 4, updateFn: val => starRotSpeed = val },
+        blinkSlider: { variable: 'blinkSpeed', span: blinkValSpan, precision: 3, updateFn: val => blinkSpeed = val },
+        scaleSlider: { variable: 'globalScale', span: scaleValSpan, precision: 1, updateFn: val => { globalScale = val; buildScene(); } },
+        frameWidthSlider: { variable: 'frameWidth', span: frameWidthValSpan, precision: 0, updateFn: val => { frameWidth = val; buildScene(); } },
+        frameOpacitySlider: { variable: 'frameOpacity', span: frameOpacityValSpan, precision: 1, updateFn: val => { frameOpacity = val; buildScene(); /* might need specific update */ } },
+        starSizeSlider: { variable: 'starSize', span: starSizeValSpan, precision: 1, updateFn: val => { starSize = val; if (stars) stars.material.size = val; } },
+        starCountSlider: { variable: 'starCount', span: starCountValSpan, precision: 0, updateFn: val => { starCount = val; buildScene(); } },
+        imgOpacitySlider: { variable: 'imgOpacity', span: imgOpacityValSpan, precision: 1, updateFn: val => { imgOpacity = val; buildScene(); /* might need specific update */ } }
+      };
+
+      Object.entries(sliderMap).forEach(([sliderId, config]) => {
+        const sliderElement = document.getElementById(sliderId);
+        if (sliderElement && config.span) {
+          sliderElement.addEventListener('input', e => {
+            const value = config.precision > 0 ? parseFloat(e.target.value) : parseInt(e.target.value, 10);
+            config.updateFn(value);
+            config.span.textContent = value.toFixed(config.precision);
+          });
+        }
+      });
+    }
+    
+    function animate() {
+      requestAnimationFrame(animate);
+      group.rotation.y += autoRotateSpeed;
+      if (stars) stars.rotation.y += starRotSpeed;
+      
+      // Update frame opacity using JS for blinkSpeed control from variable
+      frames.forEach((f, i) => {
+          if(f.material) { // Ensure material exists
+              f.material.opacity = frameOpacity + 0.3 * Math.sin(Date.now() * (blinkSpeed * 100) + i); // blinkSpeed might need scaling for desired effect
+          }
+      });
+
+      controls.update();
+      renderer.render(scene, camera);
+    }    
     
     let lastClickTime = 0;
-    const DOUBLE_CLICK_THRESHOLD = 300; // ms
+    const DOUBLE_CLICK_THRESHOLD = 300;
 
     window.addEventListener('click', e => {
+        if (e.target.closest('#hud') || e.target.closest('#hudTab')) { // Ignore clicks on HUD
+            return;
+        }
         const currentTime = new Date().getTime();
         if (currentTime - lastClickTime < DOUBLE_CLICK_THRESHOLD) {
-            // This is a double click
             e.preventDefault();
-            const m=document.getElementById('modal');
-            if(m.classList.contains('visible')){
-                m.classList.remove('visible');
-            } else {
-                mouse.set((e.clientX/innerWidth)*2-1,-(e.clientY/innerHeight)*2+1);
-                raycaster.setFromCamera(mouse,camera);
-                const hit=raycaster.intersectObjects(group.children.filter(o=> o.isMesh && o.userData && o.userData.url)); // Intersect only meshes with userData.url
-                if(hit.length){
-                    document.getElementById('modalImg').src=hit[0].object.userData.url;
-                    m.classList.add('visible');
+            if (modal) {
+                if (modal.classList.contains('visible')) {
+                    modal.classList.remove('visible');
+                } else {
+                    mouse.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+                    raycaster.setFromCamera(mouse, camera);
+                    const hit = raycaster.intersectObjects(group.children.filter(o => o.isMesh && o.userData && o.userData.url));
+                    if (hit.length) {
+                        if (modalImg) modalImg.src = hit[0].object.userData.url;
+                        modal.classList.add('visible');
+                    }
                 }
             }
         }
         lastClickTime = currentTime;
     });
 
-    window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+    window.addEventListener('resize', () => {
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+    });
+
+    // Initial setup
+    initializeHudValues(); // Set HUD elements to reflect initial/URL param values
+    buildScene();
+    setupHUDListeners(); // Setup listeners after initial values are set
+    animate();
+
   </script>
 </body>
 </html>
