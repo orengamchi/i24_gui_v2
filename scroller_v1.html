@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SCROLLER</title>
+    <title>SCROLLER (נשלט חיצונית)</title>
     <style>
         /* General styling and reset */
         body, html {
@@ -13,7 +13,7 @@
             width: 100%;
             overflow: hidden;
             font-family: 'Heebo', 'Arial', sans-serif;
-            background-color: #f4f7f6;
+            background-color: #000; /* Default to black for full immersion */
         }
 
         /* Container for background content (iframe/image) */
@@ -24,201 +24,6 @@
             width: 100%;
             height: 100%;
             z-index: 1;
-        }
-
-        /* UI Layer - sits on top of the content */
-        #ui-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 10;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start; /* Align to top */
-            width: 100vw;
-            height: 100vh;
-            transition: opacity 0.7s ease;
-            pointer-events: none; /* Allow clicks to pass through layer */
-        }
-        
-        /* Breathing animation for the title */
-        @keyframes breathe {
-            from {
-                transform: scale(1);
-                text-shadow: 0px 4px 10px rgba(0,0,0,0.05);
-            }
-            to {
-                transform: scale(1.02);
-                text-shadow: 0px 6px 15px rgba(0,0,0,0.08);
-            }
-        }
-
-        /* Main SCROLLER Title */
-        #main-scroller-title {
-            font-size: clamp(3rem, 12vw, 7rem);
-            font-weight: 900;
-            letter-spacing: 2px;
-            color: #e9ecef;
-            user-select: none;
-            animation: breathe 4s ease-in-out infinite alternate;
-            margin-top: 5vh;
-        }
-
-        /* Styling for the draggable control box */
-        .controls {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            padding: 20px;
-            background-color: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(8px);
-            border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            text-align: center;
-            width: 90%;
-            max-width: 420px;
-            box-shadow: 0 8px 32px 0 rgba(0,0,0,0.1);
-            pointer-events: all; /* Enable pointer events for the box */
-            transition: opacity 0.7s ease; /* For close button */
-        }
-
-        #drag-handle {
-            position: absolute;
-            top: 8px;
-            left: 8px;
-            width: 24px;
-            height: 24px;
-            cursor: move;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-around;
-            padding: 4px;
-        }
-        #drag-handle span {
-            width: 100%;
-            height: 2px;
-            background-color: #6c757d;
-            border-radius: 2px;
-        }
-        #close-button {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            width: 24px;
-            height: 24px;
-            cursor: pointer;
-            font-size: 24px;
-            line-height: 24px;
-            color: #6c757d;
-            font-weight: 300;
-        }
-        #close-button:hover {
-            color: #212529;
-        }
-        
-        /* Mode switcher tabs */
-        .mode-switcher {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 25px;
-        }
-        .mode-tab {
-            padding: 10px 20px;
-            cursor: pointer;
-            color: #6c757d;
-            border-bottom: 2px solid transparent;
-            transition: color 0.3s, border-color 0.3s;
-            font-weight: 600;
-        }
-        .mode-tab.active {
-            color: #212529;
-            border-bottom-color: #212529;
-        }
-
-        .input-group {
-            margin-bottom: 20px;
-        }
-
-        /* Styling for input fields */
-        input[type="url"], input[type="text"] {
-            width: calc(100% - 28px);
-            padding: 13px;
-            border: 1px solid #ced4da;
-            border-radius: 8px;
-            font-size: 16px;
-            background-color: rgba(255, 255, 255, 0.5);
-            text-align: center;
-        }
-        
-        input[type="url"] { direction: ltr; }
-        input[type="text"] { direction: rtl; }
-
-        input:focus {
-            outline: none;
-            border-color: #80bdff;
-            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
-        }
-        
-        /* File input custom style */
-        .file-input-wrapper {
-            position: relative;
-            background-color: rgba(255, 255, 255, 0.5);
-            border: 1px dashed #ced4da;
-            border-radius: 8px;
-            padding: 20px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        .file-input-wrapper:hover {
-            background-color: rgba(255, 255, 255, 0.7);
-        }
-        #fileInput {
-            display: none;
-        }
-        #file-input-label {
-            color: #495057;
-            font-weight: 500;
-        }
-
-        /* Action Buttons Container */
-        .action-buttons {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 25px;
-            margin-top: 20px;
-        }
-        
-        /* Clear button style */
-        #clearButton {
-            background-color: #6c757d;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 12px 25px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        #clearButton:hover {
-            background-color: #5a6268;
-        }
-
-        /* Start button style */
-        #startButton {
-            width: 0;
-            height: 0;
-            border-top: 25px solid transparent;
-            border-bottom: 25px solid transparent;
-            border-left: 45px solid #212529;
-            cursor: pointer;
-            transition: transform 0.2s ease, border-left-color 0.2s ease;
-        }
-        #startButton:hover {
-            border-left-color: #007bff;
-            transform: scale(1.1);
         }
         
         /* The iframe and image containers */
@@ -236,6 +41,7 @@
             height: 100%;
             border: none;
             transform: translateY(0);
+            background-color: #fff; /* Default background for iframe content */
         }
         #imageScroller {
              width: 100%;
@@ -247,7 +53,7 @@
         /* Custom title overlay with marker effect */
         .title-overlay {
             position: absolute;
-            top: 25px;
+            top: 25px; /* Adjust as needed */
             left: 50%;
             transform: translateX(-50%);
             z-index: 20;
@@ -255,19 +61,21 @@
             opacity: 1;
             transition: opacity 0.5s ease;
             width: 90%;
+            pointer-events: none; /* Allow clicks to pass through */
         }
         
         .title-overlay h2 {
             font-size: clamp(1.8rem, 5vw, 3rem);
             font-weight: 800;
-            color: #212529;
+            color: #212529; /* Default text color for title */
             padding: 0.2em 0.4em;
             display: inline;
             line-height: 1.6;
-            background-color: #ffde00; /* Default color */
+            background-color: #ffde00; /* Default banner color */
             box-decoration-break: clone;
             -webkit-box-decoration-break: clone;
             border-radius: 4px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
         }
         
         /* Geometric progress bar */
@@ -276,90 +84,56 @@
             top: 0;
             left: 0;
             width: 100%;
-            height: 4px;
+            height: 5px; /* Slightly thicker */
             z-index: 15;
             visibility: hidden;
+            background-color: rgba(0,0,0,0.1); /* Optional background for the container */
         }
 
         #progress-bar {
             width: 0%;
             height: 100%;
-            background-color: #007bff;
-        }
-
-        /* Timer/Duration slider styles */
-        .timer-group {
-            margin-top: 25px;
-            color: #343a40;
-        }
-        #duration-label {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 10px;
-            display: block;
-        }
-        #durationSlider {
-             -webkit-appearance: none; appearance: none;
-            width: 100%; height: 4px;
-            background: #dee2e6;
-            outline: none; border-radius: 2px;
-            margin-bottom: 8px;
-        }
-        #durationSlider::-webkit-slider-thumb {
-            -webkit-appearance: none; appearance: none;
-            width: 18px; height: 18px;
-            background: #212529;
-            cursor: pointer; border-radius: 50%;
-        }
-        .timer-markers {
-            display: flex;
-            justify-content: space-between;
-            font-size: 12px;
-            color: #6c757d;
-            padding: 0 5px;
-        }
-        
-        /* Color Picker styles */
-        .color-picker-group {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-        .color-picker-group label {
-            font-weight: 600;
-            color: #343a40;
-        }
-        input[type="color"] {
-            -webkit-appearance: none; -moz-appearance: none; appearance: none;
-            width: 28px; height: 28px;
-            background-color: transparent; border: none;
-            cursor: pointer; padding: 0;
-        }
-        input[type="color"]::-webkit-color-swatch {
-            border-radius: 50%;
-            border: 2px solid #e0e0e0;
-        }
-        input[type="color"]::-moz-color-swatch {
-            border-radius: 50%;
-            border: 2px solid #e0e0e0;
+            background-color: #007bff; /* Default progress bar color */
+            transition: width 0.1s linear; /* Smooth progress update */
         }
         
         #messageBox {
             position: fixed; top: 20px; left: 50%;
             transform: translateX(-50%);
-            background-color: #d9534f; color: white;
-            padding: 15px 25px; border-radius: 8px;
+            background-color: rgba(217, 83, 79, 0.9); /* Semi-transparent red */
+            color: white;
+            padding: 12px 20px; border-radius: 6px;
             z-index: 100; display: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            font-size: 0.9em;
         }
 
         .hidden {
             display: none !important;
         }
+         /* Breathing animation for the main title if we keep it */
+        @keyframes breathe {
+            from { transform: scale(1); text-shadow: 0px 4px 10px rgba(255,255,255,0.05); }
+            to { transform: scale(1.02); text-shadow: 0px 6px 15px rgba(255,255,255,0.08); }
+        }
+        #main-scroller-title-bg { /* Optional static title if needed */
+            position: absolute;
+            top: 5vh;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: clamp(3rem, 10vw, 6rem);
+            font-weight: 900;
+            letter-spacing: 1px;
+            color: rgba(233, 236, 239, 0.1); /* Very subtle background title */
+            user-select: none;
+            z-index: 0; /* Behind content */
+            /* animation: breathe 4s ease-in-out infinite alternate; */
+        }
 
     </style>
 </head>
 <body>
+    <div id="main-scroller-title-bg">SCROLLER</div>
     
     <div id="content-layer">
         <div id="iframe-container" class="content-scroller">
@@ -370,53 +144,6 @@
         </div>
     </div>
     
-    <div id="ui-layer">
-        <h1 id="main-scroller-title">SCROLLER</h1>
-        <div class="controls" id="controls">
-             <div id="drag-handle">
-                <span></span><span></span><span></span>
-             </div>
-             <div id="close-button">&times;</div>
-             <div class="mode-switcher">
-                <div class="mode-tab active" data-mode="url">כתובת אתר</div>
-                <div class="mode-tab" data-mode="image">העלאת תמונה</div>
-            </div>
-            <div id="url-inputs">
-                <div class="input-group">
-                    <input type="url" id="urlInput" placeholder="הדבק כתובת אתר..." required>
-                </div>
-                <div class="input-group">
-                    <input type="text" id="titleInput" placeholder="הוסף כותרת (אופציונלי)">
-                </div>
-                <div class="input-group color-picker-group">
-                    <label for="bannerColor">צבע באנר</label>
-                    <input type="color" id="bannerColor" value="#ffde00">
-                </div>
-            </div>
-             <div id="image-inputs" class="hidden">
-                 <div class="input-group">
-                    <label for="fileInput" class="file-input-wrapper">
-                        <span id="file-input-label">בחר קובץ תמונה</span>
-                    </label>
-                    <input type="file" id="fileInput" accept="image/*">
-                </div>
-             </div>
-            <div class="input-group timer-group">
-                <span id="duration-label">משך גלילה: 45 שניות</span>
-                <input type="range" id="durationSlider" min="15" max="90" step="1" value="45">
-                 <div class="timer-markers">
-                    <span>15 שנ'</span>
-                    <span>45 שנ'</span>
-                    <span>90 שנ'</span>
-                </div>
-            </div>
-            <div class="action-buttons">
-                <button id="clearButton">נקה</button>
-                <div id="startButton"></div>
-            </div>
-        </div>
-    </div>
-
     <div class="title-overlay" style="visibility: hidden;">
         <h2 id="customTitle"></h2>
     </div>
@@ -429,304 +156,206 @@
 
     <script>
         // DOM Elements
-        const uiLayer = document.getElementById('ui-layer');
-        const controls = document.getElementById('controls');
-        const dragHandle = document.getElementById('drag-handle');
-        const closeButton = document.getElementById('close-button');
-        const urlInput = document.getElementById('urlInput');
-        const titleInput = document.getElementById('titleInput');
-        const fileInput = document.getElementById('fileInput');
-        const fileInputLabel = document.getElementById('file-input-label');
-        const startButton = document.getElementById('startButton');
-        const clearButton = document.getElementById('clearButton');
         const pageFrame = document.getElementById('pageFrame');
         const iframeContainer = document.getElementById('iframe-container');
         const imageScroller = document.getElementById('imageScroller');
         const imageContainer = document.getElementById('image-container');
         const titleOverlay = document.querySelector('.title-overlay');
-        const customTitle = document.getElementById('customTitle');
+        const customTitleElement = document.getElementById('customTitle'); // Renamed for clarity
         const messageBox = document.getElementById('messageBox');
         const progressContainer = document.getElementById('progress-container');
         const progressBar = document.getElementById('progress-bar');
-        const durationSlider = document.getElementById('durationSlider');
-        const durationLabel = document.getElementById('duration-label');
-        const modeSwitcher = document.querySelector('.mode-switcher');
-        const urlInputs = document.getElementById('url-inputs');
-        const imageInputs = document.getElementById('image-inputs');
-        const bannerColorPicker = document.getElementById('bannerColor');
 
         // State
         let scrollAnimation;
-        let currentMode = 'url';
-        let inactivityTimer;
-        let isScrolling = false;
-        let fileToRead = null; // Variable to hold the file object
+        let currentMode = 'url'; // Default mode
+        let isScrollingActive = false; // Renamed for clarity
         
-        const SCROLL_START_DELAY = 2000;
-        const TITLE_HIDE_DELAY = 3000;
+        const SCROLL_START_DELAY_MS = 1500; // Milliseconds
+        const TITLE_HIDE_DELAY_MS = 2500; // Milliseconds
 
-        // Functions
-        function showMessage(text, duration = 3000) {
+        function showUserMessage(text, duration = 3500) { // Renamed for clarity
             messageBox.textContent = text;
             messageBox.style.display = 'block';
             setTimeout(() => { messageBox.style.display = 'none'; }, duration);
         }
         
-        function handleMouseDuringScroll() {
-            if (isScrolling) {
-                if (uiLayer.style.opacity !== '1') {
-                    uiLayer.style.opacity = '1';
-                    uiLayer.style.pointerEvents = 'all';
-                }
-                cancelAnimationFrame(scrollAnimation);
-                progressBar.style.width = '0%'; // Reset progress bar on stop
-                isScrolling = false;
-                clearTimeout(inactivityTimer);
-                // The UI will now stay visible until the user interacts with it again
-            }
-        }
-
-        function endAnimation() {
-            isScrolling = false;
-            setTimeout(() => { progressContainer.style.visibility = 'hidden'; }, 500);
-            clearTimeout(inactivityTimer);
-            window.removeEventListener('mousemove', handleMouseDuringScroll);
-            uiLayer.style.opacity = '0';
-            uiLayer.style.pointerEvents = 'none';
+        function completeScrolling() { // Renamed for clarity
+            isScrollingActive = false;
+            setTimeout(() => { 
+                progressContainer.style.visibility = 'hidden'; 
+                progressBar.style.width = '0%'; // Reset progress for next run
+            }, 500);
             if (scrollAnimation) {
                 cancelAnimationFrame(scrollAnimation);
             }
+            // Hide title overlay if it was visible
+            if (titleOverlay.style.visibility === 'visible') {
+                titleOverlay.style.opacity = '0';
+                setTimeout(() => titleOverlay.style.visibility = 'hidden', 500);
+            }
+            // Note: We don't restore the main UI here as it's controlled externally.
         }
 
-        function restoreView() {
-            if (scrollAnimation) {
-                cancelAnimationFrame(scrollAnimation);
-            }
-            isScrolling = false;
-            uiLayer.style.opacity = '1';
-            uiLayer.style.pointerEvents = 'all';
-            iframeContainer.style.visibility = 'hidden';
-            imageContainer.style.visibility = 'hidden';
+        function initializeScroller() {
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            const targetUrl = urlParams.get('targetUrl');
+            const imageUrl = urlParams.get('imageUrl'); // For uploaded image (will be data URL)
+            const displayTitle = urlParams.get('displayTitle');
+            const bannerHexColor = urlParams.get('bannerColor'); // Expecting hex like #RRGGBB
+            const scrollDurationSec = parseInt(urlParams.get('scrollDuration'), 10) || 45;
+
+            currentMode = imageUrl ? 'image' : 'url';
+
+            // Reset previous state
+            if (scrollAnimation) cancelAnimationFrame(scrollAnimation);
+            isScrollingActive = false;
             pageFrame.src = 'about:blank';
             imageScroller.src = '';
-            titleOverlay.style.opacity = '1';
+            iframeContainer.style.visibility = 'hidden';
+            imageContainer.style.visibility = 'hidden';
             titleOverlay.style.visibility = 'hidden';
-            progressContainer.style.visibility = 'hidden';
+            customTitleElement.textContent = '';
             progressBar.style.width = '0%';
-            window.removeEventListener('mousemove', handleMouseDuringScroll);
-            clearTimeout(inactivityTimer);
-        }
-        
-        // --- Drag and Drop Logic ---
-        let isDragging = false;
-        let offsetX, offsetY;
+            progressContainer.style.visibility = 'hidden';
 
-        dragHandle.addEventListener('mousedown', (e) => {
-            isDragging = true;
-            offsetX = e.clientX - controls.getBoundingClientRect().left;
-            offsetY = e.clientY - controls.getBoundingClientRect().top;
-            controls.style.transform = 'none'; 
-            document.addEventListener('mousemove', onDrag, { passive: true });
-            document.addEventListener('mouseup', stopDrag);
-            document.body.style.userSelect = 'none';
-        });
-
-        function onDrag(e) {
-            if (isDragging) {
-                controls.style.left = `${e.clientX - offsetX}px`;
-                controls.style.top = `${e.clientY - offsetY}px`;
-            }
-        }
-
-        function stopDrag() {
-            isDragging = false;
-            document.removeEventListener('mousemove', onDrag);
-            document.removeEventListener('mouseup', stopDrag);
-            document.body.style.userSelect = '';
-        }
-
-        // --- Event Listeners ---
-        durationSlider.addEventListener('input', (e) => {
-            durationLabel.textContent = `משך גלילה: ${e.target.value} שניות`;
-        });
-        
-        modeSwitcher.addEventListener('click', (e) => {
-            if (!e.target.classList.contains('mode-tab')) return;
-            currentMode = e.target.dataset.mode;
-            document.querySelectorAll('.mode-tab').forEach(tab => tab.classList.remove('active'));
-            e.target.classList.add('active');
-            if (currentMode === 'url') {
-                urlInputs.classList.remove('hidden');
-                imageInputs.classList.add('hidden');
-            } else {
-                urlInputs.classList.add('hidden');
-                imageInputs.classList.remove('hidden');
-            }
-        });
-
-        fileInput.addEventListener('change', () => {
-            if (fileInput.files && fileInput.files[0]) {
-                fileInputLabel.textContent = fileInput.files[0].name;
-            } else {
-                fileInputLabel.textContent = 'בחר קובץ תמונה';
-            }
-        });
-
-        clearButton.addEventListener('click', () => {
-            restoreView();
-            urlInput.value = '';
-            titleInput.value = '';
-            fileInput.value = null; 
-            fileInputLabel.textContent = 'בחר קובץ תמונה';
-            fileToRead = null;
-            durationSlider.value = 45;
-            durationLabel.textContent = 'משך גלילה: 45 שניות';
-            bannerColorPicker.value = '#ffde00';
-            controls.style.left = '50%';
-            controls.style.top = '50%';
-            controls.style.transform = 'translate(-50%, -50%)';
-        });
-        
-        closeButton.addEventListener('click', () => {
-             uiLayer.style.opacity = '0';
-             uiLayer.style.pointerEvents = 'none';
-        });
-        
-        let startAction = null;
-
-        startButton.addEventListener('click', () => {
-             // Explicitly reset scroll position to the top BEFORE fade out if restarting
-            if (isScrolling) {
-                if (currentMode === 'url') {
-                    try { pageFrame.contentWindow.scrollTo(0, 0); } 
-                    catch (e) { pageFrame.style.transform = 'translateY(0px)'; }
-                } else {
-                    imageContainer.scrollTop = 0;
+            if (displayTitle) {
+                customTitleElement.textContent = decodeURIComponent(displayTitle);
+                if (bannerHexColor) {
+                    customTitleElement.style.backgroundColor = decodeURIComponent(bannerHexColor);
                 }
-            }
-
-            if (currentMode === 'url') {
-                if (!urlInput.value.trim()) {
-                    showMessage('יש להזין כתובת אתר חוקית.');
-                    return;
-                }
-                startAction = startUrlScroller;
-            } else { // image mode
-                fileToRead = fileInput.files[0] || fileToRead;
-                if (!fileToRead) {
-                    showMessage('יש לבחור קובץ תמונה.');
-                    return;
-                }
-                startAction = () => startImageScroller(fileToRead);
-            }
-            
-            uiLayer.style.opacity = '0';
-            uiLayer.style.pointerEvents = 'none';
-        });
-
-        uiLayer.addEventListener('transitionend', (e) => {
-            if (e.propertyName === 'opacity' && uiLayer.style.opacity === '0' && !isScrolling) {
-                isScrolling = true;
-                if(startAction) {
-                    startAction();
-                    startAction = null; // Consume the action
-                }
-            }
-        });
-
-        function startUrlScroller() {
-            prepareForScrolling();
-            pageFrame.src = urlInput.value.trim();
-            iframeContainer.style.visibility = 'visible';
-
-            pageFrame.onload = () => {
-                if (scrollAnimation) cancelAnimationFrame(scrollAnimation);
-                const scrollDuration = parseInt(durationSlider.value, 10) * 1000;
-                setTimeout(() => startScrolling('url', pageFrame, scrollDuration), SCROLL_START_DELAY);
-            };
-            pageFrame.onerror = () => {
-                 showMessage("שגיאה בטעינת הכתובת. ייתכן שהאתר חוסם טעינה במסגרות.");
-                 restoreView();
-            };
-        }
-
-        function startImageScroller(file) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                prepareForScrolling();
-                imageScroller.src = e.target.result;
-                imageContainer.style.visibility = 'visible';
-                imageScroller.onload = () => {
-                    if (scrollAnimation) cancelAnimationFrame(scrollAnimation);
-                    const scrollDuration = parseInt(durationSlider.value, 10) * 1000;
-                    setTimeout(() => startScrolling('image', imageScroller, scrollDuration), SCROLL_START_DELAY);
-                };
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function prepareForScrolling() {
-            const title = titleInput.value.trim();
-            if (title && currentMode === 'url') {
-                customTitle.textContent = title;
-                customTitle.style.backgroundColor = bannerColorPicker.value;
                 titleOverlay.style.visibility = 'visible';
                 titleOverlay.style.opacity = '1';
-            } else {
-                titleOverlay.style.visibility = 'hidden';
             }
+
+            if (currentMode === 'url' && targetUrl) {
+                startUrlScrollerProcess(decodeURIComponent(targetUrl), scrollDurationSec * 1000);
+            } else if (currentMode === 'image' && imageUrl) {
+                startImageScrollerProcess(decodeURIComponent(imageUrl), scrollDurationSec * 1000);
+            } else {
+                // showUserMessage("נדרשת כתובת URL או תמונה להתחלת הגלילה.", 5000);
+                // No content to scroll, maybe display a placeholder or message
+                const mainTitleBg = document.getElementById('main-scroller-title-bg');
+                if (mainTitleBg) mainTitleBg.textContent = "הגדר פרמטרים חיצונית";
+            }
+        }
+
+        function startUrlScrollerProcess(url, scrollDurationMs) {
+            iframeContainer.style.visibility = 'visible';
+            pageFrame.src = url;
+            isScrollingActive = true; // Set before onload
+            
+            pageFrame.onload = () => {
+                if (!isScrollingActive) return; // If cancelled before load
+                if (scrollAnimation) cancelAnimationFrame(scrollAnimation);
+                setTimeout(() => startActualScrolling('url', pageFrame, scrollDurationMs), SCROLL_START_DELAY_MS);
+            };
+            pageFrame.onerror = () => {
+                 showUserMessage("שגיאה בטעינת הכתובת. האתר עשוי לחסום טעינה במסגרות.");
+                 isScrollingActive = false; // Reset on error
+            };
+        }
+
+        function startImageScrollerProcess(imageDataUrl, scrollDurationMs) {
+            imageContainer.style.visibility = 'visible';
+            imageScroller.src = imageDataUrl;
+            isScrollingActive = true; // Set before onload
+
+            imageScroller.onload = () => {
+                if (!isScrollingActive) return; // If cancelled before load
+                if (scrollAnimation) cancelAnimationFrame(scrollAnimation);
+                setTimeout(() => startActualScrolling('image', imageScroller, scrollDurationMs), SCROLL_START_DELAY_MS);
+            };
+            imageScroller.onerror = () => {
+                showUserMessage("שגיאה בטעינת התמונה.");
+                isScrollingActive = false; // Reset on error
+            };
+        }
+        
+        function startActualScrolling(type, element, scrollDurationMs) {
+            if (!isScrollingActive) return; // Double check
             
             progressContainer.style.visibility = 'visible';
             progressBar.style.width = '0%';
-        }
 
-        function startScrolling(type, element, scrollDuration) {
-            window.addEventListener('mousemove', handleMouseDuringScroll);
-            
-            setTimeout(() => {
-                titleOverlay.style.opacity = '0';
-            }, TITLE_HIDE_DELAY);
+            if (titleOverlay.style.visibility === 'visible') {
+                setTimeout(() => {
+                    if (isScrollingActive) titleOverlay.style.opacity = '0';
+                }, TITLE_HIDE_DELAY_MS);
+            }
 
             if (type === 'url') {
                  try {
                     const contentWindow = element.contentWindow;
-                    const scrollableDistance = contentWindow.document.body.scrollHeight - contentWindow.innerHeight;
-                    if (scrollableDistance <= 0) { setTimeout(endAnimation, 2000); return; }
-                    animateScroll(scrollDuration, (progress) => contentWindow.scrollTo(0, progress * scrollableDistance));
-                } catch (e) {
-                    const fakePageHeightMultiplier = 3;
-                    element.style.height = `${fakePageHeightMultiplier * 100}vh`;
+                    // Ensure content is fully loaded and height is measurable
+                    // Sometimes need a slight delay for complex pages to report correct scrollHeight
+                    setTimeout(() => {
+                        if (!isScrollingActive) return;
+                        const scrollableDistance = contentWindow.document.body.scrollHeight - contentWindow.innerHeight;
+                        if (scrollableDistance <= 0) { 
+                            console.log("URL content is not scrollable or height is zero.");
+                            setTimeout(completeScrolling, 2000); return; 
+                        }
+                        animateContentScroll(scrollDurationMs, (progress) => contentWindow.scrollTo(0, progress * scrollableDistance));
+                    }, 100); // Small delay for content rendering
+                } catch (e) { // Fallback for cross-origin iframes
+                    console.warn("Cross-origin iframe, using transform for scrolling. Error: ", e.message);
+                    const fakePageHeightMultiplier = 3; // Adjust if needed
+                    element.style.height = `${fakePageHeightMultiplier * 100}vh`; // Make iframe scrollable
                     const scrollableDistance = (fakePageHeightMultiplier - 1) * window.innerHeight;
-                    animateScroll(scrollDuration, (progress) => element.style.transform = `translateY(-${progress * scrollableDistance}px)`);
+                     if (scrollableDistance <= 0) { setTimeout(completeScrolling, 2000); return; }
+                    animateContentScroll(scrollDurationMs, (progress) => element.style.transform = `translateY(-${progress * scrollableDistance}px)`);
                 }
             } else { // image
+                // Ensure image is loaded and dimensions are available
                 const scrollableDistance = element.offsetHeight - imageContainer.offsetHeight;
-                if (scrollableDistance <= 0) { setTimeout(endAnimation, 2000); return; }
-                animateScroll(scrollDuration, (progress) => {
+                 if (scrollableDistance <= 0) { 
+                    console.log("Image is not scrollable or height is zero.");
+                    setTimeout(completeScrolling, 2000); return; 
+                }
+                animateContentScroll(scrollDurationMs, (progress) => {
                     imageContainer.scrollTop = progress * scrollableDistance;
                 });
             }
         }
         
-        function animateScroll(scrollDuration, onProgress) {
+        function animateContentScroll(scrollDurationMs, onProgressCallback) { // Renamed
             let startTime = null;
 
             function animationStep(timestamp) {
+                if (!isScrollingActive) { // Check if scrolling was cancelled
+                    if (scrollAnimation) cancelAnimationFrame(scrollAnimation);
+                    progressBar.style.width = '0%';
+                    return;
+                }
                 if (!startTime) startTime = timestamp;
                 const elapsedTime = timestamp - startTime;
-                const progress = Math.min(elapsedTime / scrollDuration, 1);
+                const progress = Math.min(elapsedTime / scrollDurationMs, 1);
                 
-                onProgress(progress);
+                onProgressCallback(progress);
                 progressBar.style.width = progress * 100 + '%';
 
                 if (progress < 1) {
                     scrollAnimation = requestAnimationFrame(animationStep);
                 } else {
-                    endAnimation();
+                    completeScrolling();
                 }
             }
             scrollAnimation = requestAnimationFrame(animationStep);
         }
+
+        // Initialize on load based on URL parameters
+        document.addEventListener('DOMContentLoaded', initializeScroller);
+
+        // Listen for messages from parent window (if any, for future use or alternative control)
+        // window.addEventListener('message', (event) => {
+        //     if (event.data && event.data.action === 'updateScroller') {
+        //         // Potentially re-initialize or update params
+        //         initializeScroller(); 
+        //     }
+        // });
+
     </script>
 </body>
 </html>
