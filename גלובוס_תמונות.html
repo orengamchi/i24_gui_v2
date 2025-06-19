@@ -10,39 +10,66 @@
     html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#000; touch-action:none; }
     canvas { display:block; width:100%; height:100%; }
 
-    /* HUD וגילוי/הסתרה */
-    #hudTab {
-      position:absolute; top:8px; right:8px;
-      width:32px; height:32px;
-      background:rgba(0,0,0,0.6); border:2px solid #0f0;
-      border-radius:4px 0 0 4px; z-index:101;
-      display:flex; align-items:center; justify-content:center;
-      cursor:pointer;
-    }
-    #hudTab .icon { color:#0f0; font-size:20px; text-shadow:0 0 5px #0f0; }
+   /* HUD וגילוי/הסתרה */
+#hudTab {
+  position:absolute; top:8px; right:8px;
+  width:32px; height:32px;
+  background:rgba(0,0,0,0.6); border:2px solid #0f0;
+  border-radius:4px 0 0 4px; z-index:101;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer;
+}
+#hudTab .icon { color:#0f0; font-size:20px; text-shadow:0 0 5px #0f0; }
 
-    #hud {
-      position:absolute; top:8px; right:40px;
-      width:calc(100% - 56px); max-width:320px; max-height:90vh; overflow-y:auto;
-      background:rgba(0,0,0,0.6); border:2px solid #0f0; border-radius:8px;
-      padding:8px; box-sizing:border-box;
-      font-family:monospace; font-size:14px; color:#0f0; z-index:100;
-    }
-    #hud.hidden { display:none; }
-    #hud label { display:flex; align-items:center; margin:6px 0; }
-    #hud label .icon { margin-left:6px; color:#0f0; text-shadow:0 0 5px #0f0; }
-    #hud label span { flex:1; }
-    #hud input[type=range] {
-      -webkit-appearance:none; width:100%; height:8px; border-radius:4px;
-      background:linear-gradient(to right, #0f0 0%, #f00 100%);
-      outline:none; margin-top:4px;
-    }
-    #hud input[type=range]::-webkit-slider-thumb {
-      -webkit-appearance:none; width:16px; height:16px; border-radius:50%; background:#0f0; cursor:pointer; border:2px solid #000;
-    }
-    #hud input[type=range]::-moz-range-thumb {
-      width:16px; height:16px; border-radius:50%; background:#0f0; cursor:pointer; border:2px solid #000;
-    }
+#hud {
+  position:absolute; top:8px; right:40px;
+  width:calc(100% - 56px); max-width:320px; max-height:90vh; overflow-y:auto;
+  background:rgba(0,0,0,0.6); border:2px solid #0f0; border-radius:8px;
+  padding:8px; box-sizing:border-box;
+  font-family:monospace; font-size:14px; color:#0f0; z-index:100;
+}
+#hud.hidden { display:none; }
+#hud label { display:flex; align-items:center; margin:6px 0; }
+#hud label .icon { margin-left:6px; color:#0f0; text-shadow:0 0 5px #0f0; }
+#hud label span { flex:1; }
+#hud input[type=range] {
+  -webkit-appearance:none; width:100%; height:8px; border-radius:4px;
+  background:linear-gradient(to right, #0f0 0%, #f00 100%);
+  outline:none; margin-top:4px;
+}
+#hud input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance:none; width:16px; height:16px; border-radius:50%; background:#0f0; cursor:pointer; border:2px solid #000;
+}
+#hud input[type=range]::-moz-range-thumb {
+  width:16px; height:16px; border-radius:50%; background:#0f0; cursor:pointer; border:2px solid #000;
+}
+
+/* שעון ותאריך */
+#clock {
+  text-align:center; margin:8px 0;
+  font-family:monospace; font-size:16px; color:#ff0;
+  text-shadow:0 0 8px #ff0;
+}
+
+/* מודאל */
+.modal { position:fixed; top:0; left:0; width:100%; height:100%; display:flex;
+  align-items:center; justify-content:center;
+  background:rgba(0,0,0,1); visibility:hidden; opacity:0; transition:opacity .4s; z-index:50;
+}
+.modal.visible { visibility:visible; opacity:1; }
+.modal img {
+  max-width:90%; max-height:90%; border-radius:8px;
+  transform:scale(0.7); opacity:0;
+  transition:transform .4s ease, opacity .4s ease;
+  box-shadow:0 0 20px #0f0;
+}
+.modal.visible img { transform:scale(1); opacity:1; }
+
+/* טקסטים סייבר */
+.cyber-text { position:absolute; color:#0f0; font-family:'Courier New',monospace; font-size:16px;
+  pointer-events:none; animation:flicker var(--blinkSpeed,2s) infinite; opacity:0.6;
+}
+@keyframes flicker { 0%,100%{opacity:0.2;} 50%{opacity:0.8;} }
 
     /* שעון ותאריך */
     #clock {
